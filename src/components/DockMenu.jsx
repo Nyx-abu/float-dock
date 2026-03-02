@@ -112,6 +112,7 @@ export default function DockMenu({ onAction, activePanel }) {
   const [hoveredId, setHoveredId] = useState(null);
   const [snapsReady] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const api = window.electronAPI;
 
   return (
     <>
@@ -124,6 +125,9 @@ export default function DockMenu({ onAction, activePanel }) {
               onClick={() => {
                 if (item.id === 'folder') {
                   setWorkspaceOpen(true);
+                  if (api && api.invoke) {
+                    api.invoke('dock:setExpanded', { expanded: true });
+                  }
                   onAction(item.action);
                   return;
                 }
@@ -145,7 +149,15 @@ export default function DockMenu({ onAction, activePanel }) {
         </div>
       </div>
 
-      <WorkspacePanel isOpen={workspaceOpen} onClose={() => setWorkspaceOpen(false)} />
+      <WorkspacePanel
+        isOpen={workspaceOpen}
+        onClose={() => {
+          setWorkspaceOpen(false);
+          if (api && api.invoke) {
+            api.invoke('dock:setExpanded', { expanded: false });
+          }
+        }}
+      />
     </>
   );
 }

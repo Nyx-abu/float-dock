@@ -9,6 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let mainWindow;
 let isVisible = true;
+let isDockExpanded = false;
 
 /** @type {SnapshotManager | null} */
 let snapshotManager = null;
@@ -171,6 +172,25 @@ ipcMain.handle('dock:applyLayout', async (_event, { layout }) => {
 
   mainWindow.setBounds({ x, y, width, height });
   return { ok: true };
+});
+
+// Expand/collapse dock window height for workspace UI
+ipcMain.handle('dock:setExpanded', async (_event, { expanded }) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return { ok: false };
+
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+  const currentBounds = mainWindow.getBounds();
+  const targetHeight = expanded ? 420 : 80;
+  const margin = 20;
+
+  const width = currentBounds.width;
+  const x = Math.round(screenWidth - width - margin);
+  const y = Math.round(screenHeight - targetHeight - margin);
+
+  isDockExpanded = !!expanded;
+
+  mainWindow.setBounds({ x, y, width, height: targetHeight });
+  return { ok: true, expanded: isDockExpanded };
 });
 
 // IPC Handlers for Clipboard

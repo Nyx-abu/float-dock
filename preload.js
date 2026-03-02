@@ -19,7 +19,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       channel === 'workspace:list' ||
       channel === 'workspace:restore' ||
       channel === 'workspace:delete' ||
-      channel === 'dock:applyLayout'
+      channel === 'dock:applyLayout' ||
+      channel === 'dock:setExpanded'
     ) {
       return ipcRenderer.invoke(channel, data);
     }
