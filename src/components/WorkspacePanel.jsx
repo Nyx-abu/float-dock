@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import SaveWorkspaceModal from './SaveWorkspaceModal';
 
@@ -10,11 +10,13 @@ function formatDate(iso) {
   }
 }
 
-export default function WorkspacePanel({ isOpen, onClose }) {
+export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [panelHeight, setPanelHeight] = useState(null);
+  const panelRef = useRef(null);
 
   const api = useMemo(() => window.electronAPI, []);
 
@@ -79,21 +81,36 @@ export default function WorkspacePanel({ isOpen, onClose }) {
     }
   }
 
-  if (!isOpen) return null;
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    if (!panelRef.current) return;
+    const rect = panelRef.current.getBoundingClientRect();
+    setPanelHeight(rect.height);
+  }, [isOpen, workspaces.length]);
+
+  if (!isOpen || !anchorRect) return null;
+
+  const gap = 32;
+  const panelWidth = 360;
+  const anchorCenterX = anchorRect.left + anchorRect.width / 2;
+  const estimatedHeight = panelHeight || 260;
+  const rawTop = anchorRect.top - estimatedHeight - gap;
+  const top = Math.max(8, rawTop);
 
   const panel = (
     <div
+      ref={panelRef}
       style={{
         position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -70%)',
-        width: 360,
+        left: anchorCenterX,
+        top,
+        transform: 'translateX(-50%)',
+        width: panelWidth,
         maxHeight: 520,
         borderRadius: 16,
         background: 'radial-gradient(circle at top left, #202733, #12141a)',
         border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 18px 40px rgba(0,0,0,0.6)',
+        boxShadow: 'none',
         padding: 16,
         color: 'white',
         display: 'flex',

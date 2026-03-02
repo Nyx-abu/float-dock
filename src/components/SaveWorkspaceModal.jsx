@@ -78,8 +78,7 @@ export default function SaveWorkspaceModal({ isOpen, initialName = '', onSave, o
           borderRadius: 14,
           background: 'radial-gradient(circle at top left, #202733, #12141a)',
           border: '1px solid rgba(255,255,255,0.12)',
-          boxShadow:
-            '0 18px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.7)',
+          boxShadow: 'none',
           padding: 16,
           color: 'white',
           display: 'flex',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import SnapsIcon from './SnapsIcon';
 import WorkspacePanel from './WorkspacePanel';
 import '../styles/DockMenu.css';
@@ -112,18 +112,29 @@ export default function DockMenu({ onAction, activePanel }) {
   const [hoveredId, setHoveredId] = useState(null);
   const [snapsReady] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState(null);
   const api = window.electronAPI;
+  const dockRef = useRef(null);
 
   return (
     <>
       <div className="dock-menu">
-        <div className="dock-items">
+        <div className="dock-items" ref={dockRef}>
           {DOCK_ITEMS.map((item) => (
             <button
               key={item.id}
               className={`dock-item ${activePanel === item.action ? 'active' : ''} ${item.id === 'folder' && snapsReady ? 'snaps-ready' : ''}`}
               onClick={() => {
                 if (item.id === 'folder') {
+                  if (dockRef.current) {
+                    const rect = dockRef.current.getBoundingClientRect();
+                    setAnchorRect({
+                      top: rect.top,
+                      left: rect.left,
+                      width: rect.width,
+                      height: rect.height,
+                    });
+                  }
                   setWorkspaceOpen(true);
                   if (api && api.invoke) {
                     api.invoke('dock:setExpanded', { expanded: true });
@@ -151,6 +162,7 @@ export default function DockMenu({ onAction, activePanel }) {
 
       <WorkspacePanel
         isOpen={workspaceOpen}
+        anchorRect={anchorRect}
         onClose={() => {
           setWorkspaceOpen(false);
           if (api && api.invoke) {
