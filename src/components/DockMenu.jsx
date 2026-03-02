@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import SnapsIcon from './SnapsIcon';
+import WorkspacePanel from './WorkspacePanel';
 import '../styles/DockMenu.css';
 
 const DOCK_ITEMS = [
@@ -110,29 +111,41 @@ function SettingsIcon() {
 export default function DockMenu({ onAction, activePanel }) {
   const [hoveredId, setHoveredId] = useState(null);
   const [snapsReady] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
   return (
-    <div className="dock-menu">
-      <div className="dock-items">
-        {DOCK_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            className={`dock-item ${activePanel === item.action ? 'active' : ''} ${item.id === 'folder' && snapsReady ? 'snaps-ready' : ''}`}
-            onClick={() => onAction(item.action)}
-            onMouseEnter={() => setHoveredId(item.id)}
-            onMouseLeave={() => setHoveredId(null)}
-            title={item.tooltip}
-          >
-            <span className="dock-icon">{item.icon}</span>
-            {hoveredId === item.id && (
-              <span className="dock-tooltip">{item.tooltip}</span>
-            )}
-            {item.id === 'folder' && snapsReady && (
-              <span className="snaps-indicator" />
-            )}
-          </button>
-        ))}
+    <>
+      <div className="dock-menu">
+        <div className="dock-items">
+          {DOCK_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              className={`dock-item ${activePanel === item.action ? 'active' : ''} ${item.id === 'folder' && snapsReady ? 'snaps-ready' : ''}`}
+              onClick={() => {
+                if (item.id === 'folder') {
+                  setWorkspaceOpen(true);
+                  onAction(item.action);
+                  return;
+                }
+                onAction(item.action);
+              }}
+              onMouseEnter={() => setHoveredId(item.id)}
+              onMouseLeave={() => setHoveredId(null)}
+              title={item.tooltip}
+            >
+              <span className="dock-icon">{item.icon}</span>
+              {hoveredId === item.id && (
+                <span className="dock-tooltip">{item.tooltip}</span>
+              )}
+              {item.id === 'folder' && snapsReady && (
+                <span className="snaps-indicator" />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+
+      <WorkspacePanel isOpen={workspaceOpen} onClose={() => setWorkspaceOpen(false)} />
+    </>
   );
 }
