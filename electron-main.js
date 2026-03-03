@@ -1,11 +1,224 @@
-import { app, BrowserWindow, globalShortcut, screen, ipcMain, clipboard } from 'electron';
+import { app, BrowserWindow, globalShortcut, screen, ipcMain, clipboard, nativeImage } from 'electron';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 import { SnapshotManager } from './src/workspace/SnapshotManager.js';
 import { WindowTracker } from './src/workspace/WindowTracker.js';
 import { TerminalManager } from './src/workspace/TerminalManager.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ─── Clipboard History Manager ────────────────────────────────────────────────
+
+const HEX_COLOR_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+const URL_RE = /^(https?:\/\/|ftp:\/\/|www\.)\S+/i;
+const MAX_HISTORY = 200;
+
+class ClipboardHistoryManager {
+  constructor(userDataPath) {
+    this.historyFile = path.join(userDataPath, 'clipboard-history.json');
+    this.imagesDir = path.join(userDataPath, 'clipboard-images');
+    this.history = [];
+    this._lastHash = null;
+    this._pollInterval = null;
+    this._win = null;
+    this._ensureDirs();
+    this._load();
+  }
+
+  _ensureDirs() {
+    fs.mkdirSync(this.imagesDir, { recursive: true });
+  }
+
+  _load() {
+    try {
+      if (fs.existsSync(this.historyFile)) {
+        const raw = fs.readFileSync(this.historyFile, 'utf8');
+        this.history = JSON.parse(raw);
+      }
+    } catch (e) {
+      console.warn('[ClipboardHistory] Load error:', e.message);
+      this.history = [];
+    }
+  }
+
+  _save() {
+    try {
+      fs.writeFileSync(this.historyFile, JSON.stringify(this.history, null, 2), 'utf8');
+    } catch (e) {
+      console.warn('[ClipboardHistory] Save error:', e.message);
+    }
+  }
+
+  _hash(str) {
+    return crypto.createHash('sha1').update(str).digest('hex');
+  }
+
+  _detectType(text) {
+    if (HEX_COLOR_RE.test(text.trim())) return 'color';
+    if (URL_RE.test(text.trim())) return 'link';
+    return 'text';
+  }
+
+  _poll() {
+    try {
+      // Check image first
+      const img = clipboard.readImage();
+      if (!img.isEmpty()) {
+        const pngData = img.toPNG();
+        const hash = this._hash(pngData.toString('base64').slice(0, 256));
+        if (hash !== this._lastHash) {
+          this._lastHash = hash;
+          const filename = `${Date.now()}.png`;
+          const imgPath = path.join(this.imagesDir, filename);
+          fs.writeFileSync(imgPath, pngData);
+          // Store a compact base64 thumbnail (resize via slice trick — store full path)
+          const dataUrl = `data:image/png;base64,${pngData.toString('base64')}`;
+          this._push({ type: 'image', content: imgPath, preview: dataUrl });
+        }
+        return;
+      }
+
+      // Check for file paths (Windows clipboard file drop)
+      try {
+        const rawFiles = clipboard.readBuffer('FileNameW');
+        if (rawFiles && rawFiles.length > 0) {
+          const text = rawFiles.toString('ucs2').replace(/\0/g, '').trim();
+          if (text) {
+            const hash = this._hash(text);
+            if (hash !== this._lastHash) {
+              this._lastHash = hash;
+              const files = text.split('\n').map(f => f.trim()).filter(Boolean);
+              this._push({ type: 'file', content: text, preview: files[0] || text });
+            }
+            return;
+          }
+        }
+      } catch (_) { /* not a file — continue */ }
+
+      // Text content
+      const text = clipboard.readText();
+      if (!text) return;
+      const hash = this._hash(text);
+      if (hash === this._lastHash) return;
+      this._lastHash = hash;
+
+      const type = this._detectType(text);
+      this._push({ type, content: text, preview: text });
+
+    } catch (e) {
+      // Clipboard can throw during certain OS states
+      console.warn('[ClipboardHistory] Poll error:', e.message);
+    }
+  }
+
+  _push(partial) {
+    const item = {
+      id: crypto.randomUUID(),
+      type: partial.type,
+      content: partial.content,
+      preview: partial.preview,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Deduplicate against most recent same-type item
+    const recent = this.history.find(h => h.type === item.type && h.content === item.content);
+    if (recent) {
+      // Bubble to top with new timestamp instead of duplicating
+      this.history = this.history.filter(h => h.id !== recent.id);
+      recent.timestamp = item.timestamp;
+      this.history.unshift(recent);
+    } else {
+      this.history.unshift(item);
+      if (this.history.length > MAX_HISTORY) {
+        const removed = this.history.splice(MAX_HISTORY);
+        // Clean up orphaned image files
+        for (const old of removed) {
+          if (old.type === 'image' && old.content && fs.existsSync(old.content)) {
+            fs.unlink(old.content, () => { });
+          }
+        }
+      }
+    }
+
+    this._save();
+
+    // Notify renderer
+    if (this._win && !this._win.isDestroyed()) {
+      this._win.webContents.send('clipboard:newItem', item);
+    }
+  }
+
+  start(win) {
+    this._win = win;
+    if (this._pollInterval) return;
+    // Seed hash from current clipboard so we don't immediately re-add existing content
+    try {
+      const img = clipboard.readImage();
+      if (!img.isEmpty()) {
+        const pngData = img.toPNG();
+        this._lastHash = this._hash(pngData.toString('base64').slice(0, 256));
+      } else {
+        const text = clipboard.readText();
+        if (text) this._lastHash = this._hash(text);
+      }
+    } catch (_) { }
+    this._pollInterval = setInterval(() => this._poll(), 500);
+  }
+
+  stop() {
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval);
+      this._pollInterval = null;
+    }
+  }
+
+  getHistory() { return this.history; }
+
+  deleteItem(id) {
+    const item = this.history.find(h => h.id === id);
+    if (item && item.type === 'image' && item.content && fs.existsSync(item.content)) {
+      fs.unlink(item.content, () => { });
+    }
+    this.history = this.history.filter(h => h.id !== id);
+    this._save();
+  }
+
+  clearAll() {
+    for (const item of this.history) {
+      if (item.type === 'image' && item.content && fs.existsSync(item.content)) {
+        fs.unlink(item.content, () => { });
+      }
+    }
+    this.history = [];
+    this._save();
+  }
+
+  copyItem(id) {
+    const item = this.history.find(h => h.id === id);
+    if (!item) return false;
+    if (item.type === 'image') {
+      try {
+        const data = fs.readFileSync(item.content);
+        clipboard.writeImage(nativeImage.createFromBuffer(data));
+      } catch (_) { }
+    } else {
+      clipboard.writeText(item.content);
+      // After writing, update hash so monitor doesn't re-add
+      this._lastHash = this._hash(item.content);
+    }
+    return true;
+  }
+}
+
+let clipboardHistory = null;
+function getClipboardHistory() {
+  if (!clipboardHistory) {
+    clipboardHistory = new ClipboardHistoryManager(app.getPath('userData'));
+  }
+  return clipboardHistory;
+}
 
 let mainWindow;
 let isVisible = true;
@@ -59,6 +272,9 @@ function createWindow() {
   mainWindow.loadURL(indexPath);
   mainWindow.show();
 
+  // Start clipboard history monitoring
+  getClipboardHistory().start(mainWindow);
+
   if (isDevelopment) {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
@@ -85,6 +301,25 @@ ipcMain.handle('notify', (event, { title, body }) => {
     mainWindow.webContents.send('show-notification', { title, body });
   }
   return { success: true };
+});
+
+// ─── Clipboard History IPC ────────────────────────────────────────────────────
+ipcMain.handle('clipboard:getHistory', () => {
+  return getClipboardHistory().getHistory();
+});
+
+ipcMain.handle('clipboard:deleteItem', (_event, { id }) => {
+  getClipboardHistory().deleteItem(id);
+  return { ok: true };
+});
+
+ipcMain.handle('clipboard:clearAll', () => {
+  getClipboardHistory().clearAll();
+  return { ok: true };
+});
+
+ipcMain.handle('clipboard:copyItem', (_event, { id }) => {
+  return getClipboardHistory().copyItem(id);
 });
 
 // Workspace Snapshot IPC
@@ -180,7 +415,7 @@ ipcMain.handle('dock:setExpanded', async (_event, { expanded }) => {
 
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
   const currentBounds = mainWindow.getBounds();
-  const targetHeight = expanded ? 420 : 80;
+  const targetHeight = expanded ? 480 : 80;
   const margin = 20;
 
   const width = currentBounds.width;
@@ -240,4 +475,5 @@ app.on('activate', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  if (clipboardHistory) clipboardHistory.stop();
 });

@@ -10,6 +10,12 @@
   position: relative;
 }
 
+/* When workspace panel is open: pin dock bar to bottom of expanded window */
+.dock-menu.panel-open {
+  align-items: flex-end;
+  padding-bottom: 14px;
+}
+
 /* Dock bar container - compact floating bar */
 .dock-items {
   display: flex;

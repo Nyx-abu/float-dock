@@ -7,21 +7,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   on: (channel, callback) => {
     const handler = (event, data) => callback(data);
     ipcRenderer.on(channel, handler);
-    // return unsubscribe
     return () => ipcRenderer.removeListener(channel, handler);
   },
   invoke: (channel, data) => {
-    // whitelist channels
-    if (
-      channel === 'clipboard:copy' ||
-      channel === 'notify' ||
-      channel === 'workspace:save' ||
-      channel === 'workspace:list' ||
-      channel === 'workspace:restore' ||
-      channel === 'workspace:delete' ||
-      channel === 'dock:applyLayout' ||
-      channel === 'dock:setExpanded'
-    ) {
+    const allowed = [
+      'clipboard:copy',
+      'clipboard:getHistory',
+      'clipboard:deleteItem',
+      'clipboard:clearAll',
+      'clipboard:copyItem',
+      'notify',
+      'workspace:save',
+      'workspace:list',
+      'workspace:restore',
+      'workspace:delete',
+      'dock:applyLayout',
+      'dock:setExpanded',
+    ];
+    if (allowed.includes(channel)) {
       return ipcRenderer.invoke(channel, data);
     }
   },
@@ -34,6 +37,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('workspace:dockLayoutRestore', handler);
     return () => ipcRenderer.removeListener('workspace:dockLayoutRestore', handler);
+  },
+  onClipboardUpdate: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('clipboard:newItem', handler);
+    return () => ipcRenderer.removeListener('clipboard:newItem', handler);
   },
   clipboard: {
     copy: (text) => ipcRenderer.invoke('clipboard:copy', text),

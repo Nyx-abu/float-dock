@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import SnapsIcon from './SnapsIcon';
 import WorkspacePanel from './WorkspacePanel';
+import ClipboardPanel from './ClipboardPanel';
 import '../styles/DockMenu.css';
 
 const DOCK_ITEMS = [
@@ -9,7 +10,7 @@ const DOCK_ITEMS = [
   { id: 'browser', action: 'browser', tooltip: 'Browser', icon: <BrowserIcon /> },
   { id: 'camera', action: 'camera', tooltip: 'Camera', icon: <CameraIcon /> },
   { id: 'sparkle', action: 'sparkle', tooltip: 'AI', icon: <SparkleIcon /> },
-  { id: 'film', action: 'film', tooltip: 'Film', icon: <FilmIcon /> },
+  { id: 'clipboard', action: 'clipboard', tooltip: 'Clipboard History', icon: <ClipboardIcon /> },
   { id: 'mic', action: 'mic', tooltip: 'Mic', icon: <MicIcon /> },
   { id: 'lightning', action: 'lightning', tooltip: 'Lightning', icon: <LightningIcon /> },
   { id: 'notes', action: 'notes', tooltip: 'Notes', icon: <NotesIcon /> },
@@ -53,17 +54,13 @@ function SparkleIcon() {
   );
 }
 
-function FilmIcon() {
+function ClipboardIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="2" y="2" width="20" height="20" rx="2.18" />
-      <line x1="7" y1="2" x2="7" y2="22" />
-      <line x1="17" y1="2" x2="17" y2="22" />
-      <line x1="2" y1="12" x2="22" y2="12" />
-      <line x1="2" y1="7" x2="7" y2="7" />
-      <line x1="2" y1="17" x2="7" y2="17" />
-      <line x1="17" y1="17" x2="22" y2="17" />
-      <line x1="17" y1="7" x2="22" y2="7" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="2" width="6" height="4" rx="1" />
+      <path d="M9 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-3" />
+      <line x1="9" y1="12" x2="15" y2="12" />
+      <line x1="9" y1="16" x2="13" y2="16" />
     </svg>
   );
 }
@@ -113,32 +110,37 @@ export default function DockMenu({ onAction, activePanel }) {
   const [snapsReady] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [anchorRect, setAnchorRect] = useState(null);
+  const [clipboardOpen, setClipboardOpen] = useState(false);
+  const [clipboardAnchorRect, setClipboardAnchorRect] = useState(null);
   const api = window.electronAPI;
   const dockRef = useRef(null);
 
   return (
     <>
-      <div className="dock-menu">
+      <div className={`dock-menu${(workspaceOpen || clipboardOpen) ? ' panel-open' : ''}`}>
         <div className="dock-items" ref={dockRef}>
           {DOCK_ITEMS.map((item) => (
             <button
               key={item.id}
               className={`dock-item ${activePanel === item.action ? 'active' : ''} ${item.id === 'folder' && snapsReady ? 'snaps-ready' : ''}`}
-              onClick={() => {
+              {...(item.id === 'folder' ? { 'data-dock-action': 'folder' } : {})}
+              {...(item.id === 'clipboard' ? { 'data-dock-action': 'clipboard' } : {})}
+              onClick={(e) => {
                 if (item.id === 'folder') {
-                  if (dockRef.current) {
-                    const rect = dockRef.current.getBoundingClientRect();
-                    setAnchorRect({
-                      top: rect.top,
-                      left: rect.left,
-                      width: rect.width,
-                      height: rect.height,
-                    });
-                  }
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setAnchorRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom, right: rect.right });
+                  setClipboardOpen(false); // close sibling panel
                   setWorkspaceOpen(true);
-                  if (api && api.invoke) {
-                    api.invoke('dock:setExpanded', { expanded: true });
-                  }
+                  if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: true });
+                  onAction(item.action);
+                  return;
+                }
+                if (item.id === 'clipboard') {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setClipboardAnchorRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom, right: rect.right });
+                  setWorkspaceOpen(false); // close sibling panel
+                  setClipboardOpen(true);
+                  if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: true });
                   onAction(item.action);
                   return;
                 }
@@ -165,9 +167,16 @@ export default function DockMenu({ onAction, activePanel }) {
         anchorRect={anchorRect}
         onClose={() => {
           setWorkspaceOpen(false);
-          if (api && api.invoke) {
-            api.invoke('dock:setExpanded', { expanded: false });
-          }
+          if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: false });
+        }}
+      />
+
+      <ClipboardPanel
+        isOpen={clipboardOpen}
+        anchorRect={clipboardAnchorRect}
+        onClose={() => {
+          setClipboardOpen(false);
+          if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: false });
         }}
       />
     </>

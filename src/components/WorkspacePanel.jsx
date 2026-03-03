@@ -15,7 +15,6 @@ export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
-  const [panelHeight, setPanelHeight] = useState(null);
   const panelRef = useRef(null);
 
   const api = useMemo(() => window.electronAPI, []);
@@ -83,30 +82,64 @@ export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
 
   useLayoutEffect(() => {
     if (!isOpen) return;
-    if (!panelRef.current) return;
-    const rect = panelRef.current.getBoundingClientRect();
-    setPanelHeight(rect.height);
-  }, [isOpen, workspaces.length]);
+
+    let rafId;
+
+    const place = () => {
+      const btn = document.querySelector('[data-dock-action="folder"]');
+      if (!btn || !panelRef.current) return;
+
+      const dockRect = btn.getBoundingClientRect();
+      const pWidth = 360;
+      const pHeight = panelRef.current.offsetHeight;
+      const vWidth = window.innerWidth;
+      const vHeight = window.innerHeight;
+      const GAP = 16;
+      const MARGIN = 12;
+
+      // Default: above the dock button, horizontally centered on it
+      let targetX = dockRect.left + dockRect.width / 2 - pWidth / 2;
+      let targetY = dockRect.top - pHeight - GAP;
+
+      // Flip below if not enough room above
+      if (targetY < MARGIN) {
+        targetY = dockRect.bottom + GAP;
+      }
+
+      // Clamp within viewport
+      targetX = Math.max(MARGIN, Math.min(targetX, vWidth - pWidth - MARGIN));
+      targetY = Math.max(MARGIN, Math.min(targetY, vHeight - pHeight - MARGIN));
+
+      panelRef.current.style.left = `${Math.round(targetX)}px`;
+      panelRef.current.style.top = `${Math.round(targetY)}px`;
+      panelRef.current.style.transform = 'none';
+    };
+
+    const loop = () => {
+      place();
+      rafId = requestAnimationFrame(loop);
+    };
+
+    // Double-rAF: first frame lets React commit the DOM,
+    // second frame runs after the BrowserWindow has resized (dock:setExpanded)
+    rafId = requestAnimationFrame(() => requestAnimationFrame(loop));
+
+    return () => cancelAnimationFrame(rafId);
+  }, [isOpen]);
 
   if (!isOpen || !anchorRect) return null;
 
-  const gap = 32;
   const panelWidth = 360;
-  const anchorCenterX = anchorRect.left + anchorRect.width / 2;
-  const estimatedHeight = panelHeight || 260;
-  const rawTop = anchorRect.top - estimatedHeight - gap;
-  const top = Math.max(8, rawTop);
 
   const panel = (
     <div
       ref={panelRef}
       style={{
         position: 'fixed',
-        left: anchorCenterX,
-        top,
-        transform: 'translateX(-50%)',
+        left: -9999,
+        top: -9999,
         width: panelWidth,
-        maxHeight: 520,
+        maxHeight: 360,
         borderRadius: 16,
         background: 'radial-gradient(circle at top left, #202733, #12141a)',
         border: '1px solid rgba(255,255,255,0.08)',
