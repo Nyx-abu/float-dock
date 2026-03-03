@@ -415,7 +415,7 @@ ipcMain.handle('dock:setExpanded', async (_event, { expanded }) => {
 
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
   const currentBounds = mainWindow.getBounds();
-  const targetHeight = expanded ? 480 : 80;
+  const targetHeight = expanded ? 620 : 80;
   const margin = 20;
 
   const width = currentBounds.width;
