@@ -418,10 +418,12 @@ ipcMain.handle('dock:setExpanded', async (_event, { expanded }) => {
   const currentBounds = mainWindow.getBounds();
   const targetHeight = expanded ? 620 : 80;
 
-  // Preserve X (dock may have been dragged anywhere)
-  // Only adjust Y so the window grows upward from its current horizontal position
+  // Anchor to the dock's current bottom edge so it stays wherever the user left it.
+  // Growing/shrinking happens upward; the bottom of the dock doesn't move.
+  const currentBottom = currentBounds.y + currentBounds.height;
   const x = currentBounds.x;
-  const y = Math.round(screenHeight - targetHeight - 20);
+  // Clamp so the window doesn't go off the top of the screen
+  const y = Math.max(0, Math.min(currentBottom - targetHeight, screenHeight - targetHeight));
 
   isDockExpanded = !!expanded;
 
