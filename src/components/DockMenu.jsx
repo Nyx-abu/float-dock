@@ -127,18 +127,30 @@ export default function DockMenu({ onAction, activePanel }) {
               {...(item.id === 'clipboard' ? { 'data-dock-action': 'clipboard' } : {})}
               onClick={(e) => {
                 if (item.id === 'folder') {
+                  if (workspaceOpen) {
+                    // Toggle off
+                    setWorkspaceOpen(false);
+                    if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: false });
+                    return;
+                  }
                   const rect = e.currentTarget.getBoundingClientRect();
                   setAnchorRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom, right: rect.right });
-                  setClipboardOpen(false); // close sibling panel
+                  setClipboardOpen(false);
                   setWorkspaceOpen(true);
                   if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: true });
                   onAction(item.action);
                   return;
                 }
                 if (item.id === 'clipboard') {
+                  if (clipboardOpen) {
+                    // Toggle off
+                    setClipboardOpen(false);
+                    if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: false });
+                    return;
+                  }
                   const rect = e.currentTarget.getBoundingClientRect();
                   setClipboardAnchorRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom, right: rect.right });
-                  setWorkspaceOpen(false); // close sibling panel
+                  setWorkspaceOpen(false);
                   setClipboardOpen(true);
                   if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: true });
                   onAction(item.action);

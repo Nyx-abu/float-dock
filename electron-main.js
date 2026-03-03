@@ -244,7 +244,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 480,
     height: 80,
-    x: screenWidth - 500,
+    // Default: horizontally centered, slightly above the bottom taskbar
+    x: Math.round(screenWidth / 2 - 240),
     y: screenHeight - 120,
     // important for clean overlay on Windows
     frame: false,
@@ -413,18 +414,18 @@ ipcMain.handle('dock:applyLayout', async (_event, { layout }) => {
 ipcMain.handle('dock:setExpanded', async (_event, { expanded }) => {
   if (!mainWindow || mainWindow.isDestroyed()) return { ok: false };
 
-  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+  const { height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
   const currentBounds = mainWindow.getBounds();
   const targetHeight = expanded ? 620 : 80;
-  const margin = 20;
 
-  const width = currentBounds.width;
-  const x = Math.round(screenWidth - width - margin);
-  const y = Math.round(screenHeight - targetHeight - margin);
+  // Preserve X (dock may have been dragged anywhere)
+  // Only adjust Y so the window grows upward from its current horizontal position
+  const x = currentBounds.x;
+  const y = Math.round(screenHeight - targetHeight - 20);
 
   isDockExpanded = !!expanded;
 
-  mainWindow.setBounds({ x, y, width, height: targetHeight });
+  mainWindow.setBounds({ x, y, width: currentBounds.width, height: targetHeight });
   return { ok: true, expanded: isDockExpanded };
 });
 
