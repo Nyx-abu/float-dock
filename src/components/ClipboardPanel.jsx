@@ -232,12 +232,16 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
             .catch(() => setLoading(false));
     }, [isOpen, api]);
 
-    // Live push
+    // Live push: main process sends either a new item or an existing item (bubbled dedup)
     useEffect(() => {
         if (!isOpen || !api.onClipboardUpdate) return;
         return api.onClipboardUpdate(newItem => {
             setItems(prev => {
-                const rest = prev.filter(i => !(i.type === newItem.type && i.content === newItem.content));
+                // Remove any existing item with the same id OR same content (bubble dedup)
+                const rest = prev.filter(i =>
+                    i.id !== newItem.id &&
+                    !(i.type === newItem.type && i.content === newItem.content)
+                );
                 return [newItem, ...rest];
             });
         });

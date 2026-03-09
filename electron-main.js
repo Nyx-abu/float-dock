@@ -63,7 +63,7 @@ class ClipboardHistoryManager {
 
   _poll() {
     try {
-      // Check image first
+      // ── Image ───────────────────────────────────────────────────────
       const img = clipboard.readImage();
       if (!img.isEmpty()) {
         const pngData = img.toPNG();
@@ -73,9 +73,11 @@ class ClipboardHistoryManager {
           const filename = `${Date.now()}.png`;
           const imgPath = path.join(this.imagesDir, filename);
           fs.writeFileSync(imgPath, pngData);
-          // Store a compact base64 thumbnail (resize via slice trick — store full path)
-          const dataUrl = `data:image/png;base64,${pngData.toString('base64')}`;
-          this._push({ type: 'image', content: imgPath, preview: dataUrl });
+          // Generate small thumbnail (max 300px wide) to keep JSON/IPC small
+          const thumb = img.resize({ width: Math.min(img.getSize().width, 300) });
+          const thumbB64 = thumb.toPNG().toString('base64');
+          const preview = `data:image/png;base64,${thumbB64}`;
+          this._push({ type: 'image', content: imgPath, preview });
         }
         return;
       }
@@ -144,9 +146,13 @@ class ClipboardHistoryManager {
 
     this._save();
 
-    // Notify renderer
+    // ── Notify renderer ──────────────────────────────────────────────
     if (this._win && !this._win.isDestroyed()) {
-      this._win.webContents.send('clipboard:newItem', item);
+      // IMPORTANT: send `recent` in the dedup path, NOT `item`.
+      // If we sent `item` (new UUID) the renderer would store a different id
+      // than what this.history holds, making copyItem(id) fail silently.
+      const toSend = recent ?? item;
+      this._win.webContents.send('clipboard:newItem', toSend);
     }
   }
 
@@ -197,17 +203,47 @@ class ClipboardHistoryManager {
 
   copyItem(id) {
     const item = this.history.find(h => h.id === id);
-    if (!item) return false;
+    if (!item) {
+      console.warn('[ClipboardHistory] copyItem: id not found:', id);
+      return false;
+    }
+
     if (item.type === 'image') {
       try {
+        // Primary: read from the saved PNG file
         const data = fs.readFileSync(item.content);
-        clipboard.writeImage(nativeImage.createFromBuffer(data));
-      } catch (_) { }
+        const img  = nativeImage.createFromBuffer(data);
+        clipboard.writeImage(img);
+        this._lastHash = this._hash(img.toPNG().toString('base64').slice(0, 256));
+      } catch (_) {
+        // Fallback: recreate from the preview thumbnail stored in memory
+        try {
+          const b64 = item.preview.replace(/^data:image\/png;base64,/, '');
+          const img = nativeImage.createFromBuffer(Buffer.from(b64, 'base64'));
+          clipboard.writeImage(img);
+          this._lastHash = this._hash(img.toPNG().toString('base64').slice(0, 256));
+        } catch (e2) {
+          console.warn('[ClipboardHistory] copyItem image fallback error:', e2.message);
+          return false;
+        }
+      }
+
+    } else if (item.type === 'file') {
+      const paths = item.content.split('\n').map(f => f.trim()).filter(Boolean);
+      try {
+        // Windows: write FileNameW format (UCS-2, null-separated, double-null terminated)
+        const buf = Buffer.from(paths.join('\0') + '\0\0', 'ucs2');
+        clipboard.writeBuffer('FileNameW', buf);
+      } catch (_) {
+        clipboard.writeText(item.content);
+      }
+      this._lastHash = this._hash(item.content);
+
     } else {
       clipboard.writeText(item.content);
-      // After writing, update hash so monitor doesn't re-add
       this._lastHash = this._hash(item.content);
     }
+
     return true;
   }
 }
