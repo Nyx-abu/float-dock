@@ -70,8 +70,10 @@ function ImagePreview({ src }) {
     );
 }
 
-function FilePreview({ content }) {
-    const files = content.split('\n').map(f => f.trim()).filter(Boolean);
+function FilePreview({ content, paths: pathsProp }) {
+    const files = (Array.isArray(pathsProp) && pathsProp.length)
+        ? pathsProp
+        : content.split('\n').map(f => f.trim()).filter(Boolean);
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {files.slice(0, 3).map((f, i) => (
@@ -188,7 +190,7 @@ function ItemRow({ item, onCopy, onDelete }) {
             <div style={{ paddingLeft: 2, cursor: 'default' }}>
                 {item.type === 'color' && <ColorSwatch hex={item.content} />}
                 {item.type === 'image' && <ImagePreview src={item.preview} />}
-                {item.type === 'file' && <FilePreview content={item.content} />}
+                {item.type === 'file' && <FilePreview content={item.content} paths={item.paths} />}
                 {item.type === 'link' && <LinkPreview url={item.content.trim()} />}
                 {item.type === 'text' && (
                     <p style={{

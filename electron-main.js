@@ -15,6 +15,30 @@ const HEX_COLOR_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
 const URL_RE = /^(https?:\/\/|ftp:\/\/|www\.)\S+/i;
 const MAX_HISTORY = 200;
 
+/**
+ * Build a Windows CF_HDROP clipboard buffer.
+ * Structure: DROPFILES header (20 bytes) + UTF-16LE null-separated path list + double-null.
+ *
+ * typedef struct _DROPFILES {
+ *   DWORD pFiles;  // offset to file list = 20
+ *   POINT pt;      // drop point (ignored, set to 0,0)
+ *   BOOL  fNC;     // non-client drop (false = 0)
+ *   BOOL  fWide;   // Unicode paths (true = 1)
+ * } DROPFILES;
+ */
+function buildCFHDROP(filePaths) {
+  const header = Buffer.alloc(20);
+  header.writeUInt32LE(20, 0);  // pFiles: file list starts right after header
+  header.writeUInt32LE(0,  4);  // pt.x
+  header.writeUInt32LE(0,  8);  // pt.y
+  header.writeUInt32LE(0, 12);  // fNC = false
+  header.writeUInt32LE(1, 16);  // fWide = true → UTF-16LE paths
+  // Null-separated paths + double-null terminator, UTF-16LE
+  const pathStr = filePaths.join('\0') + '\0\0';
+  const pathBuf = Buffer.from(pathStr, 'ucs2');
+  return Buffer.concat([header, pathBuf]);
+}
+
 class ClipboardHistoryManager {
   constructor(userDataPath) {
     this.historyFile = path.join(userDataPath, 'clipboard-history.json');
@@ -63,43 +87,62 @@ class ClipboardHistoryManager {
 
   _poll() {
     try {
-      // ── Image ───────────────────────────────────────────────────────
-      const img = clipboard.readImage();
-      if (!img.isEmpty()) {
-        const pngData = img.toPNG();
-        const hash = this._hash(pngData.toString('base64').slice(0, 256));
-        if (hash !== this._lastHash) {
-          this._lastHash = hash;
-          const filename = `${Date.now()}.png`;
-          const imgPath = path.join(this.imagesDir, filename);
-          fs.writeFileSync(imgPath, pngData);
-          // Generate small thumbnail (max 300px wide) to keep JSON/IPC small
-          const thumb = img.resize({ width: Math.min(img.getSize().width, 300) });
-          const thumbB64 = thumb.toPNG().toString('base64');
-          const preview = `data:image/png;base64,${thumbB64}`;
-          this._push({ type: 'image', content: imgPath, preview });
-        }
-        return;
-      }
+      const formats = clipboard.availableFormats();
 
-      // Check for file paths (Windows clipboard file drop)
+      // ── 1. Files — always try CF_HDROP directly (availableFormats returns MIME types,
+      //    NOT Windows format names, so we can't gate on format strings) ──
       try {
-        const rawFiles = clipboard.readBuffer('FileNameW');
-        if (rawFiles && rawFiles.length > 0) {
-          const text = rawFiles.toString('ucs2').replace(/\0/g, '').trim();
-          if (text) {
-            const hash = this._hash(text);
+        const rawFiles = clipboard.readBuffer('CF_HDROP');
+        if (rawFiles && rawFiles.length > 20) {
+          const pFiles = rawFiles.readUInt32LE(0);
+          const fWide  = rawFiles.readUInt32LE(16);
+          const pathBuf = rawFiles.slice(pFiles);
+          const raw = fWide ? pathBuf.toString('ucs2') : pathBuf.toString('ascii');
+          const paths = raw.split('\0').map(p => p.trim()).filter(Boolean);
+          if (paths.length > 0) {
+            const key = paths.join('\n');
+            const hash = this._hash(key);
             if (hash !== this._lastHash) {
+              this._push({ type: 'file', content: key, paths, preview: paths[0] });
               this._lastHash = hash;
-              const files = text.split('\n').map(f => f.trim()).filter(Boolean);
-              this._push({ type: 'file', content: text, preview: files[0] || text });
             }
             return;
           }
         }
-      } catch (_) { /* not a file — continue */ }
+      } catch (_) { /* no CF_HDROP data — continue */ }
 
-      // Text content
+      // ── 2. Images — check MIME types from availableFormats ──
+      if (formats.some(f => f.startsWith('image/'))) {
+        const img = clipboard.readImage();
+        if (!img.isEmpty()) {
+          const pngData = img.toPNG();
+          const hash = this._hash(pngData.toString('base64').slice(0, 256));
+          if (hash !== this._lastHash) {
+            try {
+              const filename = `${Date.now()}.png`;
+              const imgPath = path.join(this.imagesDir, filename);
+              fs.writeFileSync(imgPath, pngData);
+
+              let preview;
+              try {
+                const { width } = img.getSize();
+                const thumbImg = width > 300 ? img.resize({ width: 300 }) : img;
+                preview = `data:image/png;base64,${thumbImg.toPNG().toString('base64')}`;
+              } catch (_) {
+                preview = `data:image/png;base64,${pngData.toString('base64')}`;
+              }
+
+              this._push({ type: 'image', content: imgPath, preview });
+              this._lastHash = hash;
+            } catch (e) {
+              console.warn('[ClipboardHistory] Image capture error:', e.message);
+            }
+          }
+          return;
+        }
+      }
+
+      // ── 3. Text / Links / Colors ──
       const text = clipboard.readText();
       if (!text) return;
       const hash = this._hash(text);
@@ -110,7 +153,6 @@ class ClipboardHistoryManager {
       this._push({ type, content: text, preview: text });
 
     } catch (e) {
-      // Clipboard can throw during certain OS states
       console.warn('[ClipboardHistory] Poll error:', e.message);
     }
   }
@@ -229,14 +271,33 @@ class ClipboardHistoryManager {
       }
 
     } else if (item.type === 'file') {
-      const paths = item.content.split('\n').map(f => f.trim()).filter(Boolean);
+      // Prefer the stored paths array; fall back to parsing the content string
+      const paths = Array.isArray(item.paths) && item.paths.length
+        ? item.paths
+        : item.content.split('\n').map(f => f.trim()).filter(Boolean);
+
+      let written = false;
       try {
-        // Windows: write FileNameW format (UCS-2, null-separated, double-null terminated)
-        const buf = Buffer.from(paths.join('\0') + '\0\0', 'ucs2');
-        clipboard.writeBuffer('FileNameW', buf);
-      } catch (_) {
-        clipboard.writeText(item.content);
+        // Primary: CF_HDROP (required for Windows Explorer file paste)
+        const buf = buildCFHDROP(paths);
+        clipboard.writeBuffer('CF_HDROP', buf);
+        written = true;
+      } catch (e1) {
+        console.warn('[ClipboardHistory] CF_HDROP write error:', e1.message);
       }
+
+      if (!written) {
+        try {
+          // Secondary: FileNameW (works in some apps but not Explorer)
+          const buf = Buffer.from(paths.join('\0') + '\0\0', 'ucs2');
+          clipboard.writeBuffer('FileNameW', buf);
+          written = true;
+        } catch (e2) {
+          console.warn('[ClipboardHistory] FileNameW write error:', e2.message);
+        }
+      }
+
+      if (!written) return false; // do not fall back to text for files
       this._lastHash = this._hash(item.content);
 
     } else {
