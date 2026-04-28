@@ -169,20 +169,6 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
     }
   }, [exec]);
 
-  // ── Insert inline code (wraps selection in <code> tag) ──
-  const insertCode = useCallback(() => {
-    editorRef.current?.focus();
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-      const text = sel.toString();
-      if (text) {
-        document.execCommand('insertHTML', false, `<code>${text}</code>`);
-      } else {
-        document.execCommand('insertHTML', false, '<code>code</code>');
-      }
-    }
-    updateFormats();
-  }, [updateFormats]);
 
   // ── Insert checklist item ──
   const insertChecklist = useCallback(() => {
@@ -301,9 +287,7 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
             <TBtn onClick={() => exec('strikeThrough')} active={formats.strikeThrough} title="Strikethrough">
               <span style={{ textDecoration: 'line-through', fontSize: 12 }}>S</span>
             </TBtn>
-            <TBtn onClick={insertCode} title="Inline code">
-              <span style={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: -0.5 }}>&lt;/&gt;</span>
-            </TBtn>
+
 
             <Divider />
 
