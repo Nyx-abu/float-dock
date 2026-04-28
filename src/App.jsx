@@ -53,9 +53,7 @@ export default function App() {
     <div
       className={`dock-container ${restoreAnim ? 'layout-restore' : ''}`}
       style={{
-        // Helps the UI feel responsive while the BrowserWindow resizes
         transition: 'width 180ms ease',
-        width: dockLayout?.width ? `${dockLayout.width}px` : undefined,
       }}
     >
       <DockMenu onAction={handleAction} activePanel={activePanel} />

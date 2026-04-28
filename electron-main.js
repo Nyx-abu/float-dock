@@ -530,20 +530,24 @@ ipcMain.handle('dock:applyLayout', async (_event, { layout }) => {
 ipcMain.handle('dock:setExpanded', async (_event, { expanded }) => {
   if (!mainWindow || mainWindow.isDestroyed()) return { ok: false };
 
-  const { height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
   const currentBounds = mainWindow.getBounds();
-  const targetHeight = expanded ? 620 : 80;
 
-  // Anchor to the dock's current bottom edge so it stays wherever the user left it.
-  // Growing/shrinking happens upward; the bottom of the dock doesn't move.
-  const currentBottom = currentBounds.y + currentBounds.height;
-  const x = currentBounds.x;
-  // Clamp so the window doesn't go off the top of the screen
-  const y = Math.max(0, Math.min(currentBottom - targetHeight, screenHeight - targetHeight));
+  if (expanded) {
+    if (!mainWindow.collapsedBounds) {
+      mainWindow.collapsedBounds = currentBounds;
+    }
+    mainWindow.setBounds({ x: 0, y: 0, width: screenWidth, height: screenHeight });
+  } else {
+    const bounds = mainWindow.collapsedBounds || {
+      x: Math.round(screenWidth / 2 - 240),
+      y: screenHeight - 120,
+      width: 480, height: 80
+    };
+    mainWindow.setBounds(bounds);
+  }
 
   isDockExpanded = !!expanded;
-
-  mainWindow.setBounds({ x, y, width: currentBounds.width, height: targetHeight });
   return { ok: true, expanded: isDockExpanded };
 });
 

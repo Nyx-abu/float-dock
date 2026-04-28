@@ -23,6 +23,9 @@ export const PANEL_BASE_STYLE = {
   fontFamily: 'system-ui, -apple-system, sans-serif',
   boxSizing: 'border-box',
   overflow: 'hidden',
+  resize: 'both',
+  minWidth: 300,
+  minHeight: 300,
 };
 
 export const HEADER_STYLE = {
@@ -65,13 +68,14 @@ export function usePanelPosition(isOpen, panelRef, dockAction, panelWidth = PANE
       const btn = document.querySelector(`[data-dock-action="${dockAction}"]`);
       if (!btn || !panelRef.current) return;
       const r = btn.getBoundingClientRect();
+      const pW = panelRef.current.offsetWidth;
       const pH = panelRef.current.offsetHeight;
       const vW = window.innerWidth, vH = window.innerHeight;
       const GAP = 16, M = 12;
-      let tx = r.left + r.width / 2 - panelWidth / 2;
+      let tx = r.left + r.width / 2 - pW / 2;
       let ty = r.top - pH - GAP;
       if (ty < M) ty = r.bottom + GAP;
-      tx = Math.max(M, Math.min(tx, vW - panelWidth - M));
+      tx = Math.max(M, Math.min(tx, vW - pW - M));
       ty = Math.max(M, Math.min(ty, vH - pH - M));
       panelRef.current.style.left = `${Math.round(tx)}px`;
       panelRef.current.style.top = `${Math.round(ty)}px`;
