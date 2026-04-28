@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { usePanelPosition, PANEL_BASE_STYLE, HEADER_STYLE, TITLE_STYLE, CLOSE_BTN } from '../hooks/usePanelPosition';
+import { HEADER_STYLE, TITLE_STYLE, CLOSE_BTN } from '../hooks/usePanelPosition';
+import ResizablePanel from './ResizablePanel';
 
 export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
   const [url, setUrl] = useState('');
@@ -14,7 +15,7 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
   const inputRef = useRef(null);
   const api = useMemo(() => window.electronAPI, []);
 
-  usePanelPosition(isOpen, panelRef, 'browser');
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -77,7 +78,14 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
   };
 
   const panel = (
-    <div ref={panelRef} style={{ ...PANEL_BASE_STYLE, height: 520 }}>
+    <ResizablePanel
+      isOpen={isOpen}
+      dockAction="browser"
+      defaultWidth={800}
+      defaultHeight={520}
+      minWidth={400}
+      minHeight={300}
+    >
       <div style={HEADER_STYLE}>
         <span style={TITLE_STYLE}>🌐 Browser</span>
         <button onClick={onClose} style={CLOSE_BTN}
@@ -174,7 +182,7 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
           )}
         </div>
       )}
-    </div>
+    </ResizablePanel>
   );
 
   return ReactDOM.createPortal(panel, document.body);

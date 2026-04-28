@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { usePanelPosition, PANEL_BASE_STYLE, HEADER_STYLE, TITLE_STYLE, CLOSE_BTN, INPUT_STYLE, SCROLL_AREA } from '../hooks/usePanelPosition';
+import { HEADER_STYLE, TITLE_STYLE, CLOSE_BTN, INPUT_STYLE, SCROLL_AREA } from '../hooks/usePanelPosition';
+import ResizablePanel from './ResizablePanel';
 import '../styles/panels.css';
 
 // ─── Color Palette ────────────────────────────────────────────────────────────
@@ -98,7 +99,7 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
   const loadedNoteId = useRef(null);
   const api = useMemo(() => window.electronAPI, []);
 
-  usePanelPosition(isOpen, panelRef, 'notes');
+
 
   // Load notes on open
   useEffect(() => {
@@ -220,7 +221,17 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
   const fontSize = editNote?.fontSize || 13;
 
   const panel = (
-    <div ref={panelRef} style={PANEL_BASE_STYLE}>
+    <ResizablePanel
+      isOpen={isOpen}
+      dockAction="notes"
+      defaultWidth={420}
+      defaultHeight={480}
+      minWidth={300}
+      minHeight={300}
+      style={{
+        background: 'radial-gradient(circle at top left, #1e2330, #111418)',
+      }}
+    >
       {/* ── Header ── */}
       <div style={HEADER_STYLE}>
         {view === 'editor' && (
@@ -409,7 +420,7 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
           </div>
         </>
       )}
-    </div>
+    </ResizablePanel>
   );
 
   return ReactDOM.createPortal(panel, document.body);

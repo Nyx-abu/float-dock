@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { usePanelPosition, PANEL_BASE_STYLE, HEADER_STYLE, TITLE_STYLE, CLOSE_BTN } from '../hooks/usePanelPosition';
+import { HEADER_STYLE, TITLE_STYLE, CLOSE_BTN } from '../hooks/usePanelPosition';
+import ResizablePanel from './ResizablePanel';
 import '../styles/panels.css';
 
 const QUICK_ACTIONS = [
@@ -32,7 +33,7 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
   const inputRef = useRef(null);
   const api = useMemo(() => window.electronAPI, []);
 
-  usePanelPosition(isOpen, panelRef, 'sparkle');
+
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -75,7 +76,14 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
   if (!isOpen || !anchorRect) return null;
 
   const panel = (
-    <div ref={panelRef} style={PANEL_BASE_STYLE}>
+    <ResizablePanel
+      isOpen={isOpen}
+      dockAction="sparkle"
+      defaultWidth={420}
+      defaultHeight={480}
+      minWidth={300}
+      minHeight={300}
+    >
       {/* Header */}
       <div style={HEADER_STYLE}>
         <span style={TITLE_STYLE}>✨ AI Assistant</span>
@@ -152,7 +160,7 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
           fontSize: 14, cursor: input.trim() && !loading ? 'pointer' : 'default', WebkitAppRegion: 'no-drag',
         }}>→</button>
       </div>
-    </div>
+    </ResizablePanel>
   );
 
   return ReactDOM.createPortal(panel, document.body);

@@ -23,9 +23,6 @@ export const PANEL_BASE_STYLE = {
   fontFamily: 'system-ui, -apple-system, sans-serif',
   boxSizing: 'border-box',
   overflow: 'hidden',
-  resize: 'both',
-  minWidth: 300,
-  minHeight: 300,
 };
 
 export const HEADER_STYLE = {
@@ -62,27 +59,26 @@ export const SCROLL_AREA = {
 
 export function usePanelPosition(isOpen, panelRef, dockAction, panelWidth = PANEL_WIDTH) {
   useLayoutEffect(() => {
-    if (!isOpen) return;
-    let rafId;
-    const place = () => {
-      const btn = document.querySelector(`[data-dock-action="${dockAction}"]`);
-      if (!btn || !panelRef.current) return;
-      const r = btn.getBoundingClientRect();
-      const pW = panelRef.current.offsetWidth;
-      const pH = panelRef.current.offsetHeight;
+    if (!isOpen || !panelRef.current) return;
+    
+    // We wait 1 frame to ensure CSS dimensions are calculated
+    requestAnimationFrame(() => {
+      if (!panelRef.current) return;
+      
+      const pW = panelRef.current.offsetWidth || panelWidth;
+      const pH = panelRef.current.offsetHeight || 480;
       const vW = window.innerWidth, vH = window.innerHeight;
-      const GAP = 16, M = 12;
-      let tx = r.left + r.width / 2 - pW / 2;
-      let ty = r.top - pH - GAP;
-      if (ty < M) ty = r.bottom + GAP;
-      tx = Math.max(M, Math.min(tx, vW - pW - M));
-      ty = Math.max(M, Math.min(ty, vH - pH - M));
+      
+      // Center the panel perfectly
+      const tx = (vW / 2) - (pW / 2);
+      // Slightly above vertical center for better UX
+      const ty = (vH / 2) - (pH / 2) - 30;
+      
       panelRef.current.style.left = `${Math.round(tx)}px`;
-      panelRef.current.style.top = `${Math.round(ty)}px`;
-      panelRef.current.style.transform = 'none';
-    };
-    const loop = () => { place(); rafId = requestAnimationFrame(loop); };
-    rafId = requestAnimationFrame(() => requestAnimationFrame(loop));
-    return () => cancelAnimationFrame(rafId);
-  }, [isOpen, dockAction, panelWidth]);
+      panelRef.current.style.top = `${Math.round(Math.max(12, ty))}px`;
+      
+      // Add the animation class
+      panelRef.current.classList.add('macos-pop');
+    });
+  }, [isOpen, panelWidth]);
 }

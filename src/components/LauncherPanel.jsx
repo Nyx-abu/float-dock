@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { usePanelPosition, PANEL_BASE_STYLE, HEADER_STYLE, TITLE_STYLE, CLOSE_BTN } from '../hooks/usePanelPosition';
+import { HEADER_STYLE, TITLE_STYLE, CLOSE_BTN } from '../hooks/usePanelPosition';
+import ResizablePanel from './ResizablePanel';
 
 export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
   const [query, setQuery] = useState('');
@@ -11,7 +12,7 @@ export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
   const inputRef = useRef(null);
   const api = useMemo(() => window.electronAPI, []);
 
-  usePanelPosition(isOpen, panelRef, 'lightning');
+
 
   // Focus on open
   useEffect(() => {
@@ -54,7 +55,14 @@ export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
   const typeIcons = { app: '🚀', folder: '📁', system: '⚙️', url: '🌐' };
 
   const panel = (
-    <div ref={panelRef} style={PANEL_BASE_STYLE}>
+    <ResizablePanel
+      isOpen={isOpen}
+      dockAction="lightning"
+      defaultWidth={420}
+      defaultHeight={480}
+      minWidth={300}
+      minHeight={300}
+    >
       <div style={HEADER_STYLE}>
         <span style={TITLE_STYLE}>⚡ Quick Launcher</span>
         <button onClick={onClose} style={CLOSE_BTN}
@@ -115,7 +123,7 @@ export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', textAlign: 'center', flexShrink: 0 }}>
         ↑↓ Navigate · Enter to launch · Esc to close
       </div>
-    </div>
+    </ResizablePanel>
   );
 
   return ReactDOM.createPortal(panel, document.body);

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { usePanelPosition, PANEL_BASE_STYLE, HEADER_STYLE, TITLE_STYLE, CLOSE_BTN } from '../hooks/usePanelPosition';
+import { HEADER_STYLE, TITLE_STYLE, CLOSE_BTN } from '../hooks/usePanelPosition';
+import ResizablePanel from './ResizablePanel';
 import '@xterm/xterm/css/xterm.css';
 
 export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
@@ -13,7 +14,6 @@ export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
   const [isSpawned, setIsSpawned] = useState(false);
   const api = useMemo(() => window.electronAPI, []);
 
-  usePanelPosition(isOpen, panelRef, 'terminal');
 
   useEffect(() => {
     if (!isOpen || !terminalRef.current) return;
@@ -78,33 +78,9 @@ export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
     }
 
     // Handle data from backend
-    let hasPrintedPanda = false;
-    let pandaTimeout;
-
     const cleanupOnData = api.onTerminalData((data) => {
       if (xtermRef.current) {
         xtermRef.current.write(data);
-        
-        // Wait for the initial burst of shell output to settle, then clear and print the panda
-        if (!hasPrintedPanda) {
-          clearTimeout(pandaTimeout);
-          pandaTimeout = setTimeout(() => {
-            hasPrintedPanda = true;
-            const t = xtermRef.current;
-            t.clear();
-            t.writeln('\x1b[38;2;230;80;50m    _..---.._    \x1b[0m');
-            t.writeln('\x1b[38;2;230;80;50m  .\'  _   _  \'.  \x1b[0m');
-            t.writeln('\x1b[38;2;230;80;50m /   \x1b[38;2;255;255;255m(o_ _o)\x1b[38;2;230;80;50m   \\ \x1b[0m');
-            t.writeln('\x1b[38;2;230;80;50m |    \x1b[38;2;255;255;255m_ " _\x1b[38;2;230;80;50m    | \x1b[0m');
-            t.writeln('\x1b[38;2;230;80;50m \\   \x1b[38;2;255;255;255m\'--Y--\'\x1b[38;2;230;80;50m   / \x1b[0m');
-            t.writeln('\x1b[38;2;230;80;50m  \'._\x1b[38;2;50;50;50m#######\x1b[38;2;230;80;50m_.  \x1b[0m');
-            t.writeln('\x1b[38;2;230;80;50m     \'--^--\'     \x1b[0m');
-            t.writeln('\x1b[38;2;154;165;255m Welcome to Float Dock Terminal!\x1b[0m\r\n');
-            
-            // Hit enter to get a fresh prompt below the panda
-            api.invoke('terminal:write', { data: '\r' });
-          }, 300);
-        }
       }
     });
 
@@ -120,8 +96,26 @@ export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
 
     // Focus terminal slightly after opening
     const focusTimeout = setTimeout(() => {
-      if (xtermRef.current) xtermRef.current.focus();
-    }, 100);
+      if (xtermRef.current) {
+        xtermRef.current.focus();
+        
+        // Print the panda once on initialization
+        if (!xtermRef.current._hasPrintedPanda) {
+          xtermRef.current._hasPrintedPanda = true;
+          const t = xtermRef.current;
+          t.writeln('\x1b[38;2;230;80;50m    _..---.._    \x1b[0m');
+          t.writeln('\x1b[38;2;230;80;50m  .\'  _   _  \'.  \x1b[0m');
+          t.writeln('\x1b[38;2;230;80;50m /   \x1b[38;2;255;255;255m(o_ _o)\x1b[38;2;230;80;50m   \\ \x1b[0m');
+          t.writeln('\x1b[38;2;230;80;50m |    \x1b[38;2;255;255;255m_ " _\x1b[38;2;230;80;50m    | \x1b[0m');
+          t.writeln('\x1b[38;2;230;80;50m \\   \x1b[38;2;255;255;255m\'--Y--\'\x1b[38;2;230;80;50m   / \x1b[0m');
+          t.writeln('\x1b[38;2;230;80;50m  \'._\x1b[38;2;50;50;50m#######\x1b[38;2;230;80;50m_.  \x1b[0m');
+          t.writeln('\x1b[38;2;230;80;50m     \'--^--\'     \x1b[0m');
+          t.writeln('\x1b[38;2;154;165;255m Welcome to Float Dock Terminal!\x1b[0m\r\n');
+          // send an enter to get the prompt
+          api.invoke('terminal:write', { data: '\r' });
+        }
+      }
+    }, 150);
 
     return () => {
       cleanupOnData();
@@ -150,7 +144,17 @@ export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
   if (!anchorRect) return null;
 
   const panel = (
-    <div ref={panelRef} style={{ ...PANEL_BASE_STYLE, display: isOpen ? 'flex' : 'none', background: 'radial-gradient(circle at top left, #1c1e26, #151820)' }}>
+    <ResizablePanel
+      isOpen={isOpen}
+      dockAction="terminal"
+      defaultWidth={600}
+      defaultHeight={480}
+      minWidth={300}
+      minHeight={250}
+      style={{
+        background: 'radial-gradient(circle at top left, #1c1e26, #151820)',
+      }}
+    >
       <div style={HEADER_STYLE}>
         <span style={TITLE_STYLE}>🖥️ Terminal</span>
         <button onClick={() => { if (xtermRef.current) xtermRef.current.clear(); }}
@@ -171,7 +175,7 @@ export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
         {/* xterm.js container */}
         <div ref={terminalRef} style={{ width: '100%', height: '100%' }} />
       </div>
-    </div>
+    </ResizablePanel>
   );
 
   return ReactDOM.createPortal(panel, document.body);

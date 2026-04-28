@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { CLOSE_BTN, SCROLL_AREA } from '../hooks/usePanelPosition';
+import ResizablePanel from './ResizablePanel';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -259,33 +261,7 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
         api.invoke('clipboard:clearAll');
     }, [api]);
 
-    // Anti-gravity positioning
-    useLayoutEffect(() => {
-        if (!isOpen) return;
-        let rafId;
-        const place = () => {
-            const btn = document.querySelector('[data-dock-action="clipboard"]');
-            if (!btn || !panelRef.current) return;
-            const dockRect = btn.getBoundingClientRect();
-            const pHeight = panelRef.current.offsetHeight;
-            const vWidth = window.innerWidth;
-            const vHeight = window.innerHeight;
-            const GAP = 16, MARGIN = 12;
 
-            let tx = dockRect.left + dockRect.width / 2 - PANEL_WIDTH / 2;
-            let ty = dockRect.top - pHeight - GAP;
-            if (ty < MARGIN) ty = dockRect.bottom + GAP;
-            tx = Math.max(MARGIN, Math.min(tx, vWidth - PANEL_WIDTH - MARGIN));
-            ty = Math.max(MARGIN, Math.min(ty, vHeight - pHeight - MARGIN));
-
-            panelRef.current.style.left = `${Math.round(tx)}px`;
-            panelRef.current.style.top = `${Math.round(ty)}px`;
-            panelRef.current.style.transform = 'none';
-        };
-        const loop = () => { place(); rafId = requestAnimationFrame(loop); };
-        rafId = requestAnimationFrame(() => requestAnimationFrame(loop));
-        return () => cancelAnimationFrame(rafId);
-    }, [isOpen]);
 
     if (!isOpen || !anchorRect) return null;
 
@@ -301,31 +277,15 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
     }
 
     const panel = (
-        <div
-            ref={panelRef}
+        <ResizablePanel
+            isOpen={isOpen}
+            dockAction="clipboard"
+            defaultWidth={420}
+            defaultHeight={480}
+            minWidth={300}
+            minHeight={300}
             style={{
-                position: 'fixed',
-                left: -9999, top: -9999,
-                width: PANEL_WIDTH,
-                // Fixed height so the inner scroll container has a solid reference
-                height: 480,
-                maxHeight: '80vh',
-                borderRadius: 16,
                 background: 'radial-gradient(circle at top left, #1e2330, #111418)',
-                border: '1px solid rgba(255,255,255,0.09)',
-                boxShadow: '0 12px 48px rgba(0,0,0,0.55)',
-                padding: '14px 14px 12px',
-                color: 'white',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-                zIndex: 9500,
-                pointerEvents: 'auto',
-                // ⬇ Critical: disable Electron drag so all interactions work
-                WebkitAppRegion: 'no-drag',
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                boxSizing: 'border-box',
-                overflow: 'hidden',
             }}
         >
             {/* ── Header ── */}
@@ -362,28 +322,11 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
                 )}
 
                 {/* Close */}
-                <button onClick={onClose} aria-label="Close" style={{
-                    ...btnBase, color: 'rgba(255,255,255,0.4)', fontSize: 16, lineHeight: 1,
-                }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
-                >✕</button>
+                <button onClick={onClose} aria-label="Close" style={CLOSE_BTN}>✕</button>
             </div>
 
             {/* ── Scrollable list ── */}
-            <div style={{
-                flex: 1,
-                overflowY: 'scroll',   // force scrollbar track
-                minHeight: 0,          // allows flex child to shrink below content size
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-                paddingRight: 4,
-                WebkitAppRegion: 'no-drag',
-                // Custom scrollbar
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'rgba(255,255,255,0.15) transparent',
-            }}>
+            <div style={{ ...SCROLL_AREA, flexDirection: 'column', gap: 4, paddingRight: 4 }}>
                 {loading && (
                     <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, textAlign: 'center', padding: 24, margin: 0 }}>
                         Loading…
@@ -414,7 +357,7 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
                     </div>
                 ))}
             </div>
-        </div>
+        </ResizablePanel>
     );
 
     return ReactDOM.createPortal(panel, document.body);

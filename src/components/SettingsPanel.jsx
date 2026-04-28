@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { usePanelPosition, PANEL_BASE_STYLE, HEADER_STYLE, TITLE_STYLE, CLOSE_BTN, SCROLL_AREA } from '../hooks/usePanelPosition';
+import { HEADER_STYLE, TITLE_STYLE, CLOSE_BTN, SCROLL_AREA } from '../hooks/usePanelPosition';
+import ResizablePanel from './ResizablePanel';
 
 const POSITIONS = [
   { value: 'bottom-center', label: 'Bottom Center' },
@@ -59,7 +60,7 @@ export default function SettingsPanel({ isOpen, onClose, anchorRect }) {
   const panelRef = useRef(null);
   const api = useMemo(() => window.electronAPI, []);
 
-  usePanelPosition(isOpen, panelRef, 'settings');
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -83,7 +84,14 @@ export default function SettingsPanel({ isOpen, onClose, anchorRect }) {
   };
 
   const panel = (
-    <div ref={panelRef} style={PANEL_BASE_STYLE}>
+    <ResizablePanel
+      isOpen={isOpen}
+      dockAction="settings"
+      defaultWidth={360}
+      defaultHeight={420}
+      minWidth={300}
+      minHeight={300}
+    >
       <div style={HEADER_STYLE}>
         <span style={TITLE_STYLE}>⚙️ Settings</span>
         <button onClick={onClose} style={CLOSE_BTN}
@@ -134,7 +142,7 @@ export default function SettingsPanel({ isOpen, onClose, anchorRect }) {
           </div>
         </Section>
       </div>
-    </div>
+    </ResizablePanel>
   );
 
   return ReactDOM.createPortal(panel, document.body);

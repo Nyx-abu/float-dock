@@ -537,6 +537,7 @@ ipcMain.handle('dock:setExpanded', async (_event, { expanded }) => {
     if (!mainWindow.collapsedBounds) {
       mainWindow.collapsedBounds = currentBounds;
     }
+    mainWindow.setResizable(true);
     mainWindow.setBounds({ x: 0, y: 0, width: screenWidth, height: screenHeight });
   } else {
     const bounds = mainWindow.collapsedBounds || {
@@ -545,6 +546,7 @@ ipcMain.handle('dock:setExpanded', async (_event, { expanded }) => {
       width: 480, height: 80
     };
     mainWindow.setBounds(bounds);
+    mainWindow.setResizable(false);
   }
 
   isDockExpanded = !!expanded;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { usePanelPosition, PANEL_BASE_STYLE, HEADER_STYLE, TITLE_STYLE, CLOSE_BTN, INPUT_STYLE } from '../hooks/usePanelPosition';
+import { HEADER_STYLE, TITLE_STYLE, CLOSE_BTN, INPUT_STYLE } from '../hooks/usePanelPosition';
+import ResizablePanel from './ResizablePanel';
 import '../styles/panels.css';
 
 const LANGUAGES = [
@@ -29,7 +30,7 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
   const scrollRef = useRef(null);
   const api = useMemo(() => window.electronAPI, []);
 
-  usePanelPosition(isOpen, panelRef, 'mic');
+
 
   // Stop recording when panel closes
   useEffect(() => {
@@ -97,7 +98,14 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
   if (!isOpen || !anchorRect) return null;
 
   const panel = (
-    <div ref={panelRef} style={PANEL_BASE_STYLE}>
+    <ResizablePanel
+      isOpen={isOpen}
+      dockAction="mic"
+      defaultWidth={360}
+      defaultHeight={480}
+      minWidth={300}
+      minHeight={300}
+    >
       {/* Header */}
       <div style={HEADER_STYLE}>
         <span style={TITLE_STYLE}>🎤 Voice to Text</span>
@@ -192,7 +200,7 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
           WebkitAppRegion: 'no-drag',
         }}>Clear</button>
       </div>
-    </div>
+    </ResizablePanel>
   );
 
   return ReactDOM.createPortal(panel, document.body);
