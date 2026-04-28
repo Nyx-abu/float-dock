@@ -20,12 +20,13 @@ const LANGUAGES = [
 
 export default function VoicePanel({ isOpen, onClose, anchorRect }) {
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [interimText, setInterimText] = useState('');
   const [language, setLanguage] = useState('en-US');
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
-  const recognitionRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
   const panelRef = useRef(null);
   const scrollRef = useRef(null);
   const api = useMemo(() => window.electronAPI, []);
@@ -34,49 +35,74 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
 
   // Stop recording when panel closes
   useEffect(() => {
-    if (!isOpen && recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (_) {}
+    if (!isOpen && mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
-  }, [isOpen]);
+  }, [isOpen, isRecording]);
 
-  const toggleRecording = useCallback(() => {
+  const toggleRecording = useCallback(async () => {
     if (isRecording) {
-      if (recognitionRef.current) try { recognitionRef.current.stop(); } catch (_) {}
+      if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
       setIsRecording(false);
       return;
     }
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { setError('Speech recognition not supported'); return; }
 
-    const recognition = new SR();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = language;
-
-    recognition.onresult = (event) => {
-      let interim = '', final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) final += t;
-        else interim += t;
-      }
-      if (final) setTranscript(prev => prev + (prev ? ' ' : '') + final);
-      setInterimText(interim);
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error !== 'no-speech' && event.error !== 'aborted')
-        setError(`Error: ${event.error}`);
-      setIsRecording(false);
-    };
-
-    recognition.onend = () => { setIsRecording(false); setInterimText(''); };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsRecording(true);
     setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+
+        if (chunksRef.current.length === 0) return;
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        chunksRef.current = [];
+
+        setIsTranscribing(true);
+        try {
+          const formData = new FormData();
+          formData.append('file', blob, 'audio.webm');
+          formData.append('model', 'whisper-1');
+          formData.append('language', language.split('-')[0]);
+
+          const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer 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'
+            },
+            body: formData
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Whisper API error: ${response.status} ${errText}`);
+          }
+
+          const data = await response.json();
+          if (data.text) {
+            setTranscript(prev => prev + (prev ? ' ' : '') + data.text);
+          }
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      setError('Microphone access denied or not supported');
+    }
   }, [isRecording, language]);
 
   const handleCopy = useCallback(() => {
@@ -87,13 +113,13 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
   }, [transcript, api]);
 
   const handleClear = useCallback(() => {
-    setTranscript(''); setInterimText(''); setError(null);
+    setTranscript(''); setError(null);
   }, []);
 
   // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [transcript, interimText]);
+  }, [transcript, isTranscribing]);
 
   if (!isOpen || !anchorRect) return null;
 
@@ -151,7 +177,12 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
         {isRecording ? (
           <span style={{ color: '#ff6666', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff4444', animation: 'voiceDot 1s ease-in-out infinite' }} />
-            Listening...
+            Listening... (Click to Stop)
+          </span>
+        ) : isTranscribing ? (
+          <span style={{ color: '#4ac1ff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <span style={{ width: 12, height: 12, border: '2px solid #4ac1ff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            Transcribing...
           </span>
         ) : 'Click to start recording'}
       </div>
@@ -173,8 +204,7 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
         scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
       }}>
         {transcript && <span>{transcript}</span>}
-        {interimText && <span style={{ color: 'rgba(110,125,255,0.6)' }}> {interimText}</span>}
-        {!transcript && !interimText && (
+        {!transcript && !isTranscribing && (
           <span style={{ color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
             Your transcript will appear here...
           </span>
@@ -191,12 +221,12 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
           fontSize: 12, fontWeight: 600, cursor: transcript ? 'pointer' : 'default',
           transition: 'all 0.2s', WebkitAppRegion: 'no-drag',
         }}>{copied ? '✓ Copied!' : 'Copy to Clipboard'}</button>
-        <button onClick={handleClear} disabled={!transcript && !interimText} style={{
+        <button onClick={handleClear} disabled={!transcript} style={{
           padding: '8px 16px', borderRadius: 8,
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-          color: (transcript || interimText) ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)',
+          color: transcript ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)',
           fontSize: 12, fontWeight: 600,
-          cursor: (transcript || interimText) ? 'pointer' : 'default',
+          cursor: transcript ? 'pointer' : 'default',
           WebkitAppRegion: 'no-drag',
         }}>Clear</button>
       </div>

@@ -609,7 +609,7 @@ async function getGenAI() {
 ipcMain.handle('ai:chat', async (_e, { prompt }) => {
   const ai = await getGenAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     contents: prompt,
   });
   return { text: response.text || 'No response.' };
