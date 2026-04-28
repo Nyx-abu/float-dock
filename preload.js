@@ -48,7 +48,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       'launcher:search',
       'launcher:open',
       // Terminal
-      'terminal:exec',
+      'terminal:spawn',
+      'terminal:write',
+      'terminal:resize',
       // Browser
       'browser:getBookmarks',
       'browser:saveBookmark',
@@ -73,6 +75,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (event, data) => callback(data);
     ipcRenderer.on('clipboard:newItem', handler);
     return () => ipcRenderer.removeListener('clipboard:newItem', handler);
+  },
+  onTerminalData: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('terminal:onData', handler);
+    return () => ipcRenderer.removeListener('terminal:onData', handler);
   },
   clipboard: {
     copy: (text) => ipcRenderer.invoke('clipboard:copy', text),

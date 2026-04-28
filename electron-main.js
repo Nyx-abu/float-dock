@@ -3,6 +3,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import os from 'os';
+import pty from 'node-pty';
 import { exec } from 'child_process';
 import { SnapshotManager } from './src/workspace/SnapshotManager.js';
 import { WindowTracker } from './src/workspace/WindowTracker.js';
@@ -797,21 +799,42 @@ ipcMain.handle('launcher:open', async (_e, { path: appPath, type }) => {
 });
 
 // ─── Terminal IPC ─────────────────────────────────────────────────────────────
-ipcMain.handle('terminal:exec', (_e, { command }) => {
-  return new Promise((resolve) => {
-    exec(command, {
-      shell: 'powershell.exe',
-      timeout: 30000,
-      maxBuffer: 1024 * 1024,
-      env: { ...process.env },
-    }, (error, stdout, stderr) => {
-      resolve({
-        stdout: stdout || '',
-        stderr: stderr || (error ? error.message : ''),
-        code: error ? error.code : 0,
-      });
-    });
+let ptyProcess = null;
+
+ipcMain.handle('terminal:spawn', (e) => {
+  if (ptyProcess) {
+    ptyProcess.kill();
+  }
+  const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+  const shellArgs = os.platform() === 'win32' ? ['-NoLogo'] : [];
+  ptyProcess = pty.spawn(shell, shellArgs, {
+    name: 'xterm-256color',
+    cols: 80,
+    rows: 24,
+    cwd: process.env.USERPROFILE || process.env.HOME || process.cwd(),
+    env: process.env
   });
+
+  ptyProcess.onData((data) => {
+    if (e.sender && !e.sender.isDestroyed()) {
+      e.sender.send('terminal:onData', data);
+    }
+  });
+
+  ptyProcess.onExit(() => {
+    ptyProcess = null;
+  });
+  return { ok: true };
+});
+
+ipcMain.handle('terminal:write', (_e, { data }) => {
+  if (ptyProcess) ptyProcess.write(data);
+});
+
+ipcMain.handle('terminal:resize', (_e, { cols, rows }) => {
+  if (ptyProcess) {
+    try { ptyProcess.resize(cols, rows); } catch (err) {}
+  }
 });
 
 // ─── Browser IPC ──────────────────────────────────────────────────────────────

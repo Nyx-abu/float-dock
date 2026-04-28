@@ -1,80 +1,159 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
 import { usePanelPosition, PANEL_BASE_STYLE, HEADER_STYLE, TITLE_STYLE, CLOSE_BTN } from '../hooks/usePanelPosition';
-import '../styles/panels.css';
+import '@xterm/xterm/css/xterm.css';
 
 export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
-  const [lines, setLines] = useState([{ type: 'system', text: 'PowerShell — Float Dock Terminal' }]);
-  const [input, setInput] = useState('');
-  const [history, setHistory] = useState([]);
-  const [histIdx, setHistIdx] = useState(-1);
-  const [running, setRunning] = useState(false);
   const panelRef = useRef(null);
-  const scrollRef = useRef(null);
-  const inputRef = useRef(null);
+  const terminalRef = useRef(null);
+  const xtermRef = useRef(null);
+  const fitAddonRef = useRef(null);
+  const [isSpawned, setIsSpawned] = useState(false);
   const api = useMemo(() => window.electronAPI, []);
 
   usePanelPosition(isOpen, panelRef, 'terminal');
 
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
+    if (!isOpen || !terminalRef.current) return;
+
+    if (!xtermRef.current) {
+      // Initialize xterm
+      const term = new Terminal({
+        fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', monospace",
+        fontSize: 13,
+        lineHeight: 1.2,
+        theme: {
+          background: 'transparent',
+          foreground: '#f8f8f2',
+          cursor: '#f8f8f0',
+          cursorAccent: '#282a36',
+          selectionBackground: 'rgba(255, 255, 255, 0.3)',
+          black: '#21222c',
+          red: '#ff5555',
+          green: '#50fa7b',
+          yellow: '#f1fa8c',
+          blue: '#bd93f9',
+          magenta: '#ff79c6',
+          cyan: '#8be9fd',
+          white: '#f8f8f2',
+          brightBlack: '#6272a4',
+          brightRed: '#ff6e6e',
+          brightGreen: '#69ff94',
+          brightYellow: '#ffffa5',
+          brightBlue: '#d6acff',
+          brightMagenta: '#ff92df',
+          brightCyan: '#a4ffff',
+          brightWhite: '#ffffff'
+        },
+        cursorBlink: true,
+        allowProposedApi: true
+      });
+      const fitAddon = new FitAddon();
+      term.loadAddon(fitAddon);
+      term.open(terminalRef.current);
+      fitAddon.fit();
+
+      xtermRef.current = term;
+      fitAddonRef.current = fitAddon;
+
+      // Handle user input
+      term.onData((data) => {
+        api.invoke('terminal:write', { data });
+      });
+
+      // Handle resize
+      term.onResize(({ cols, rows }) => {
+        api.invoke('terminal:resize', { cols, rows });
+      });
+    }
+
+    // Spawn the backend process if not already spawned
+    if (!isSpawned) {
+      api.invoke('terminal:spawn').then(() => {
+        setIsSpawned(true);
+        if (fitAddonRef.current) fitAddonRef.current.fit();
+      });
+    }
+
+    // Handle data from backend
+    let hasPrintedPanda = false;
+    let pandaTimeout;
+
+    const cleanupOnData = api.onTerminalData((data) => {
+      if (xtermRef.current) {
+        xtermRef.current.write(data);
+        
+        // Wait for the initial burst of shell output to settle, then clear and print the panda
+        if (!hasPrintedPanda) {
+          clearTimeout(pandaTimeout);
+          pandaTimeout = setTimeout(() => {
+            hasPrintedPanda = true;
+            const t = xtermRef.current;
+            t.clear();
+            t.writeln('\x1b[38;2;230;80;50m    _..---.._    \x1b[0m');
+            t.writeln('\x1b[38;2;230;80;50m  .\'  _   _  \'.  \x1b[0m');
+            t.writeln('\x1b[38;2;230;80;50m /   \x1b[38;2;255;255;255m(o_ _o)\x1b[38;2;230;80;50m   \\ \x1b[0m');
+            t.writeln('\x1b[38;2;230;80;50m |    \x1b[38;2;255;255;255m_ " _\x1b[38;2;230;80;50m    | \x1b[0m');
+            t.writeln('\x1b[38;2;230;80;50m \\   \x1b[38;2;255;255;255m\'--Y--\'\x1b[38;2;230;80;50m   / \x1b[0m');
+            t.writeln('\x1b[38;2;230;80;50m  \'._\x1b[38;2;50;50;50m#######\x1b[38;2;230;80;50m_.  \x1b[0m');
+            t.writeln('\x1b[38;2;230;80;50m     \'--^--\'     \x1b[0m');
+            t.writeln('\x1b[38;2;154;165;255m Welcome to Float Dock Terminal!\x1b[0m\r\n');
+            
+            // Hit enter to get a fresh prompt below the panda
+            api.invoke('terminal:write', { data: '\r' });
+          }, 300);
+        }
+      }
+    });
+
+    // Resize observer to auto-fit terminal on panel resize
+    const resizeObserver = new ResizeObserver(() => {
+      if (fitAddonRef.current) {
+        fitAddonRef.current.fit();
+      }
+    });
+    if (terminalRef.current) {
+      resizeObserver.observe(terminalRef.current);
+    }
+
+    // Focus terminal slightly after opening
+    const focusTimeout = setTimeout(() => {
+      if (xtermRef.current) xtermRef.current.focus();
+    }, 100);
+
+    return () => {
+      cleanupOnData();
+      resizeObserver.disconnect();
+      clearTimeout(focusTimeout);
+    };
+  }, [isOpen, api, isSpawned]);
+
+  // Clean up terminal on unmount
+  useEffect(() => {
+    return () => {
+      if (xtermRef.current) {
+        xtermRef.current.dispose();
+        xtermRef.current = null;
+      }
+    };
+  }, []);
+
+  // When reopened, refit terminal
+  useEffect(() => {
+    if (isOpen && fitAddonRef.current) {
+      setTimeout(() => fitAddonRef.current.fit(), 50);
+    }
   }, [isOpen]);
 
-  // Auto-scroll
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [lines]);
-
-  const execute = useCallback(async () => {
-    const cmd = input.trim();
-    if (!cmd || running) return;
-    setInput('');
-    setHistory(prev => [cmd, ...prev.slice(0, 49)]);
-    setHistIdx(-1);
-    setLines(prev => [...prev, { type: 'cmd', text: `PS > ${cmd}` }]);
-
-    if (cmd.toLowerCase() === 'clear' || cmd.toLowerCase() === 'cls') {
-      setLines([{ type: 'system', text: 'Terminal cleared.' }]);
-      return;
-    }
-
-    setRunning(true);
-    try {
-      const res = await api.invoke('terminal:exec', { command: cmd });
-      if (res?.stdout) setLines(prev => [...prev, { type: 'out', text: res.stdout }]);
-      if (res?.stderr) setLines(prev => [...prev, { type: 'err', text: res.stderr }]);
-      if (!res?.stdout && !res?.stderr) setLines(prev => [...prev, { type: 'out', text: '(no output)' }]);
-    } catch (err) {
-      setLines(prev => [...prev, { type: 'err', text: `Error: ${err.message || 'Command failed'}` }]);
-    }
-    setRunning(false);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  }, [input, running, api]);
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); execute(); }
-    else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (history.length > 0) {
-        const next = Math.min(histIdx + 1, history.length - 1);
-        setHistIdx(next); setInput(history[next]);
-      }
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (histIdx > 0) { setHistIdx(histIdx - 1); setInput(history[histIdx - 1]); }
-      else { setHistIdx(-1); setInput(''); }
-    }
-  };
-
-  if (!isOpen || !anchorRect) return null;
-
-  const colorMap = { system: '#4ac1ff', cmd: '#9aa5ff', out: 'rgba(255,255,255,0.75)', err: '#ff8787' };
+  if (!anchorRect) return null;
 
   const panel = (
-    <div ref={panelRef} style={{ ...PANEL_BASE_STYLE, background: 'radial-gradient(circle at top left, #151820, #0d0f14)' }}>
+    <div ref={panelRef} style={{ ...PANEL_BASE_STYLE, display: isOpen ? 'flex' : 'none', background: 'radial-gradient(circle at top left, #1c1e26, #151820)' }}>
       <div style={HEADER_STYLE}>
         <span style={TITLE_STYLE}>🖥️ Terminal</span>
-        <button onClick={() => setLines([{ type: 'system', text: 'Terminal cleared.' }])}
+        <button onClick={() => { if (xtermRef.current) xtermRef.current.clear(); }}
           style={{
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: 6, color: 'rgba(255,255,255,0.5)', fontSize: 11, padding: '4px 8px',
@@ -85,39 +164,12 @@ export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
           onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>✕</button>
       </div>
 
-      {/* Output Area */}
-      <div ref={scrollRef} style={{
-        flex: 1, overflowY: 'auto', minHeight: 0,
-        background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 10,
-        fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', monospace", fontSize: 12, lineHeight: 1.6,
-        scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent',
-        WebkitAppRegion: 'no-drag',
+      <div style={{
+        flex: 1, position: 'relative', overflow: 'hidden', padding: '0 8px 8px 8px',
+        WebkitAppRegion: 'no-drag', background: 'transparent'
       }}>
-        {lines.map((line, i) => (
-          <div key={i} style={{ color: colorMap[line.type] || '#fff', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {line.text}
-          </div>
-        ))}
-        {running && (
-          <div style={{ color: 'rgba(255,255,255,0.3)' }}>
-            Running<span style={{ animation: 'termCursor 1s infinite' }}>▋</span>
-          </div>
-        )}
-      </div>
-
-      {/* Input */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        <span style={{
-          fontFamily: "'Cascadia Code', monospace", fontSize: 12, color: '#6e7dff', fontWeight: 700, flexShrink: 0,
-        }}>PS &gt;</span>
-        <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
-          disabled={running} placeholder="Enter command..."
-          style={{
-            flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 6, padding: '8px 10px', color: '#fff',
-            fontFamily: "'Cascadia Code', 'Consolas', monospace", fontSize: 12, outline: 'none',
-            WebkitAppRegion: 'no-drag',
-          }} />
+        {/* xterm.js container */}
+        <div ref={terminalRef} style={{ width: '100%', height: '100%' }} />
       </div>
     </div>
   );
