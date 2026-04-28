@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       'ai:chat',
       // Screenshots
       'screenshot:capture',
+      'screenshot:getSources',
       'screenshot:getHistory',
       'screenshot:delete',
       'screenshot:copy',

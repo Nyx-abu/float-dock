@@ -6,20 +6,41 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
   const [screenshots, setScreenshots] = useState([]);
   const [capturing, setCapturing] = useState(false);
   const [copied, setCopied] = useState(null);
+  
+  // Window selection state
+  const [selectingWindow, setSelectingWindow] = useState(false);
+  const [windowSources, setWindowSources] = useState([]);
+
   const panelRef = useRef(null);
   const api = useMemo(() => window.electronAPI, []);
 
   usePanelPosition(isOpen, panelRef, 'camera');
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setSelectingWindow(false);
+      return;
+    }
     api.invoke('screenshot:getHistory').then(list => setScreenshots(Array.isArray(list) ? list : [])).catch(() => {});
   }, [isOpen, api]);
 
-  const capture = useCallback(async (mode) => {
+  const startWindowSelection = useCallback(async () => {
+    setSelectingWindow(true);
+    setWindowSources([]);
+    try {
+      const sources = await api.invoke('screenshot:getSources');
+      setWindowSources(Array.isArray(sources) ? sources : []);
+    } catch (err) {
+      console.warn('Get sources error:', err);
+      setSelectingWindow(false);
+    }
+  }, [api]);
+
+  const capture = useCallback(async (mode, sourceId = null) => {
+    setSelectingWindow(false);
     setCapturing(true);
     try {
-      const result = await api.invoke('screenshot:capture', { mode });
+      const result = await api.invoke('screenshot:capture', { mode, sourceId });
       if (result?.screenshot) {
         setScreenshots(prev => [result.screenshot, ...prev]);
       }
@@ -54,48 +75,89 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
   const panel = (
     <div ref={panelRef} style={PANEL_BASE_STYLE}>
       <div style={HEADER_STYLE}>
-        <span style={TITLE_STYLE}>📷 Screenshots</span>
+        {selectingWindow && (
+          <button onClick={() => setSelectingWindow(false)}
+            style={{ ...CLOSE_BTN, color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>←</button>
+        )}
+        <span style={TITLE_STYLE}>{selectingWindow ? 'Select Window' : '📷 Screenshots'}</span>
         <button onClick={onClose} style={CLOSE_BTN}
           onMouseEnter={e => e.currentTarget.style.color = '#fff'}
           onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>✕</button>
       </div>
 
-      {/* Capture Buttons */}
-      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <button onClick={() => capture('fullscreen')} disabled={capturing} style={btnStyle(false)}>
-          🖥️ Full Screen
-        </button>
-        <button onClick={() => capture('window')} disabled={capturing} style={btnStyle(false)}>
-          📐 Window
-        </button>
-      </div>
+      {!selectingWindow && (
+        <>
+          {/* Capture Buttons */}
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button onClick={() => capture('fullscreen')} disabled={capturing} style={btnStyle(false)}>
+              🖥️ Full Screen
+            </button>
+            <button onClick={startWindowSelection} disabled={capturing} style={btnStyle(false)}>
+              📐 Window
+            </button>
+          </div>
 
-      {capturing && (
-        <div style={{ textAlign: 'center', padding: 8, fontSize: 12, color: '#4ac1ff' }}>
-          Capturing...
-        </div>
+          {capturing && (
+            <div style={{ textAlign: 'center', padding: 8, fontSize: 12, color: '#4ac1ff' }}>
+              Capturing...
+            </div>
+          )}
+
+          {/* Screenshots Grid */}
+          <div style={{
+            flex: 1, overflowY: 'auto', minHeight: 0,
+            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8,
+            alignContent: 'start', padding: 2,
+            scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+          }}>
+            {screenshots.length === 0 && !capturing && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 32 }}>
+                <div style={{ fontSize: 32, marginBottom: 10 }}>📷</div>
+                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, margin: 0 }}>No screenshots yet. Click a button above to capture.</p>
+              </div>
+            )}
+            {screenshots.map(ss => (
+              <ScreenshotCard key={ss.id} ss={ss} copied={copied === ss.id}
+                onCopy={() => handleCopy(ss.id)}
+                onDelete={() => handleDelete(ss.id)}
+                onOpen={() => handleOpen(ss.id)} />
+            ))}
+          </div>
+        </>
       )}
 
-      {/* Screenshots Grid */}
-      <div style={{
-        flex: 1, overflowY: 'auto', minHeight: 0,
-        display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8,
-        alignContent: 'start', padding: 2,
-        scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
-      }}>
-        {screenshots.length === 0 && !capturing && (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 32 }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>📷</div>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, margin: 0 }}>No screenshots yet. Click a button above to capture.</p>
-          </div>
-        )}
-        {screenshots.map(ss => (
-          <ScreenshotCard key={ss.id} ss={ss} copied={copied === ss.id}
-            onCopy={() => handleCopy(ss.id)}
-            onDelete={() => handleDelete(ss.id)}
-            onOpen={() => handleOpen(ss.id)} />
-        ))}
-      </div>
+      {selectingWindow && (
+        <div style={{
+          flex: 1, overflowY: 'auto', minHeight: 0,
+          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8,
+          alignContent: 'start', padding: 2,
+          scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+        }}>
+          {windowSources.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 32, color: 'rgba(255,255,255,0.5)' }}>
+              Loading windows...
+            </div>
+          ) : (
+            windowSources.map(src => (
+              <div key={src.id} onClick={() => capture('window', src.id)}
+                style={{
+                  borderRadius: 8, overflow: 'hidden',
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  cursor: 'pointer', WebkitAppRegion: 'no-drag',
+                  display: 'flex', flexDirection: 'column',
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = '#4ac1ff'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+              >
+                <img src={src.preview} alt={src.name} style={{ width: '100%', height: 80, objectFit: 'contain', background: '#000' }} />
+                <div style={{ padding: '4px 6px', fontSize: 10, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                  {src.name}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 

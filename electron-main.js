@@ -619,14 +619,34 @@ function writeScreenshotIndex(idx) {
   fs.writeFileSync(screenshotsIndex(), JSON.stringify(idx, null, 2), 'utf8');
 }
 
-ipcMain.handle('screenshot:capture', async (_e, { mode }) => {
+ipcMain.handle('screenshot:getSources', async () => {
+  const sources = await desktopCapturer.getSources({
+    types: ['window'],
+    thumbnailSize: { width: 400, height: 400 },
+  });
+  return sources.map(s => ({
+    id: s.id,
+    name: s.name,
+    preview: s.thumbnail.toDataURL()
+  }));
+});
+
+ipcMain.handle('screenshot:capture', async (_e, { mode, sourceId }) => {
   ensureScreenshotsDir();
   const sources = await desktopCapturer.getSources({
     types: mode === 'window' ? ['window'] : ['screen'],
     thumbnailSize: { width: 1920, height: 1080 },
   });
   if (!sources.length) return { screenshot: null };
-  const source = sources[0];
+  
+  let source;
+  if (mode === 'window' && sourceId) {
+    source = sources.find(s => s.id === sourceId);
+  } else {
+    source = sources[0];
+  }
+  if (!source) return { screenshot: null };
+
   const img = source.thumbnail;
   if (img.isEmpty()) return { screenshot: null };
 
