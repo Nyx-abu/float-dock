@@ -2,20 +2,31 @@ import { useRef, useState } from 'react';
 import SnapsIcon from './SnapsIcon';
 import WorkspacePanel from './WorkspacePanel';
 import ClipboardPanel from './ClipboardPanel';
+import VoicePanel from './VoicePanel';
+import NotesPanel from './NotesPanel';
+import AiPanel from './AiPanel';
+import ScreenshotPanel from './ScreenshotPanel';
+import SettingsPanel from './SettingsPanel';
+import LauncherPanel from './LauncherPanel';
+import TerminalPanel from './TerminalPanel';
+import BrowserPanel from './BrowserPanel';
 import '../styles/DockMenu.css';
 
 const DOCK_ITEMS = [
   { id: 'folder', action: 'folder', tooltip: 'Snapshots', icon: <SnapsIcon /> },
   { id: 'terminal', action: 'terminal', tooltip: 'Terminal', icon: <TerminalIcon /> },
   { id: 'browser', action: 'browser', tooltip: 'Browser', icon: <BrowserIcon /> },
-  { id: 'camera', action: 'camera', tooltip: 'Camera', icon: <CameraIcon /> },
-  { id: 'sparkle', action: 'sparkle', tooltip: 'AI', icon: <SparkleIcon /> },
+  { id: 'camera', action: 'camera', tooltip: 'Screenshots', icon: <CameraIcon /> },
+  { id: 'sparkle', action: 'sparkle', tooltip: 'AI Assistant', icon: <SparkleIcon /> },
   { id: 'clipboard', action: 'clipboard', tooltip: 'Clipboard History', icon: <ClipboardIcon /> },
-  { id: 'mic', action: 'mic', tooltip: 'Mic', icon: <MicIcon /> },
-  { id: 'lightning', action: 'lightning', tooltip: 'Lightning', icon: <LightningIcon /> },
-  { id: 'notes', action: 'notes', tooltip: 'Notes', icon: <NotesIcon /> },
+  { id: 'mic', action: 'mic', tooltip: 'Voice to Text', icon: <MicIcon /> },
+  { id: 'lightning', action: 'lightning', tooltip: 'Quick Launcher', icon: <LightningIcon /> },
+  { id: 'notes', action: 'notes', tooltip: 'Quick Notes', icon: <NotesIcon /> },
   { id: 'settings', action: 'settings', tooltip: 'Settings', icon: <SettingsIcon /> },
 ];
+
+// Items that have panels (open/close behavior)
+const PANEL_IDS = new Set(['folder', 'clipboard', 'mic', 'notes', 'sparkle', 'camera', 'settings', 'lightning', 'terminal', 'browser']);
 
 function TerminalIcon() {
   return (
@@ -108,56 +119,45 @@ function SettingsIcon() {
 export default function DockMenu({ onAction, activePanel }) {
   const [hoveredId, setHoveredId] = useState(null);
   const [snapsReady] = useState(false);
-  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [openPanel, setOpenPanel] = useState(null); // unified panel state
   const [anchorRect, setAnchorRect] = useState(null);
-  const [clipboardOpen, setClipboardOpen] = useState(false);
-  const [clipboardAnchorRect, setClipboardAnchorRect] = useState(null);
   const api = window.electronAPI;
   const dockRef = useRef(null);
 
+  const handleClick = (item, e) => {
+    if (PANEL_IDS.has(item.id)) {
+      if (openPanel === item.id) {
+        // Toggle off
+        setOpenPanel(null);
+        if (api?.invoke) api.invoke('dock:setExpanded', { expanded: false });
+      } else {
+        // Open this panel
+        const rect = e.currentTarget.getBoundingClientRect();
+        setAnchorRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom, right: rect.right });
+        setOpenPanel(item.id);
+        if (api?.invoke) api.invoke('dock:setExpanded', { expanded: true });
+      }
+      onAction(item.action);
+    } else {
+      onAction(item.action);
+    }
+  };
+
+  const closePanel = () => {
+    setOpenPanel(null);
+    if (api?.invoke) api.invoke('dock:setExpanded', { expanded: false });
+  };
+
   return (
     <>
-      <div className={`dock-menu${(workspaceOpen || clipboardOpen) ? ' panel-open' : ''}`}>
+      <div className={`dock-menu${openPanel ? ' panel-open' : ''}`}>
         <div className="dock-items" ref={dockRef}>
           {DOCK_ITEMS.map((item) => (
             <button
               key={item.id}
               className={`dock-item ${activePanel === item.action ? 'active' : ''} ${item.id === 'folder' && snapsReady ? 'snaps-ready' : ''}`}
-              {...(item.id === 'folder' ? { 'data-dock-action': 'folder' } : {})}
-              {...(item.id === 'clipboard' ? { 'data-dock-action': 'clipboard' } : {})}
-              onClick={(e) => {
-                if (item.id === 'folder') {
-                  if (workspaceOpen) {
-                    // Toggle off
-                    setWorkspaceOpen(false);
-                    if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: false });
-                    return;
-                  }
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setAnchorRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom, right: rect.right });
-                  setClipboardOpen(false);
-                  setWorkspaceOpen(true);
-                  if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: true });
-                  onAction(item.action);
-                  return;
-                }
-                if (item.id === 'clipboard') {
-                  if (clipboardOpen) {
-                    // Toggle off
-                    setClipboardOpen(false);
-                    if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: false });
-                    return;
-                  }
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setClipboardAnchorRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom, right: rect.right });
-                  setWorkspaceOpen(false);
-                  setClipboardOpen(true);
-                  if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: true });
-                  onAction(item.action);
-                  return;
-                }
-                onAction(item.action);
-              }}
+              data-dock-action={item.action}
+              onClick={(e) => handleClick(item, e)}
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
               title={item.tooltip}
@@ -174,23 +174,17 @@ export default function DockMenu({ onAction, activePanel }) {
         </div>
       </div>
 
-      <WorkspacePanel
-        isOpen={workspaceOpen}
-        anchorRect={anchorRect}
-        onClose={() => {
-          setWorkspaceOpen(false);
-          if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: false });
-        }}
-      />
-
-      <ClipboardPanel
-        isOpen={clipboardOpen}
-        anchorRect={clipboardAnchorRect}
-        onClose={() => {
-          setClipboardOpen(false);
-          if (api && api.invoke) api.invoke('dock:setExpanded', { expanded: false });
-        }}
-      />
+      {/* Panels */}
+      <WorkspacePanel isOpen={openPanel === 'folder'} anchorRect={anchorRect} onClose={closePanel} />
+      <ClipboardPanel isOpen={openPanel === 'clipboard'} anchorRect={anchorRect} onClose={closePanel} />
+      <VoicePanel isOpen={openPanel === 'mic'} anchorRect={anchorRect} onClose={closePanel} />
+      <NotesPanel isOpen={openPanel === 'notes'} anchorRect={anchorRect} onClose={closePanel} />
+      <AiPanel isOpen={openPanel === 'sparkle'} anchorRect={anchorRect} onClose={closePanel} />
+      <ScreenshotPanel isOpen={openPanel === 'camera'} anchorRect={anchorRect} onClose={closePanel} />
+      <SettingsPanel isOpen={openPanel === 'settings'} anchorRect={anchorRect} onClose={closePanel} />
+      <LauncherPanel isOpen={openPanel === 'lightning'} anchorRect={anchorRect} onClose={closePanel} />
+      <TerminalPanel isOpen={openPanel === 'terminal'} anchorRect={anchorRect} onClose={closePanel} />
+      <BrowserPanel isOpen={openPanel === 'browser'} anchorRect={anchorRect} onClose={closePanel} />
     </>
   );
 }

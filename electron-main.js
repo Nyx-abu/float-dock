@@ -1,13 +1,29 @@
-import { app, BrowserWindow, globalShortcut, screen, ipcMain, clipboard, nativeImage } from 'electron';
+import { app, BrowserWindow, globalShortcut, screen, ipcMain, clipboard, nativeImage, shell, desktopCapturer } from 'electron';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import { exec } from 'child_process';
 import { SnapshotManager } from './src/workspace/SnapshotManager.js';
 import { WindowTracker } from './src/workspace/WindowTracker.js';
 import { TerminalManager } from './src/workspace/TerminalManager.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ─── Load .env ────────────────────────────────────────────────────────────────
+function loadEnv() {
+  try {
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+      const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+      for (const line of lines) {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)\s*$/);
+        if (match && !process.env[match[1]]) process.env[match[1]] = match[2];
+      }
+    }
+  } catch (_) {}
+}
+loadEnv();
 
 // ─── Clipboard History Manager ────────────────────────────────────────────────
 
@@ -357,6 +373,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      webviewTag: true,
     },
     show: false,
   });
@@ -540,6 +557,269 @@ ipcMain.handle('clipboard:copy', async (event, text) => {
     console.error('Clipboard error:', error);
     throw error;
   }
+});
+
+// ─── Notes IPC ────────────────────────────────────────────────────────────────
+const notesFile = () => path.join(app.getPath('userData'), 'notes.json');
+function readNotes() {
+  try { return JSON.parse(fs.readFileSync(notesFile(), 'utf8')); } catch { return []; }
+}
+function writeNotes(notes) {
+  fs.writeFileSync(notesFile(), JSON.stringify(notes, null, 2), 'utf8');
+}
+
+ipcMain.handle('notes:list', () => readNotes());
+ipcMain.handle('notes:save', (_e, { note }) => {
+  const notes = readNotes();
+  const idx = notes.findIndex(n => n.id === note.id);
+  if (idx >= 0) notes[idx] = note; else notes.unshift(note);
+  writeNotes(notes);
+  return { ok: true };
+});
+ipcMain.handle('notes:delete', (_e, { id }) => {
+  writeNotes(readNotes().filter(n => n.id !== id));
+  return { ok: true };
+});
+ipcMain.handle('notes:togglePin', (_e, { id }) => {
+  const notes = readNotes();
+  const note = notes.find(n => n.id === id);
+  if (note) { note.pinned = !note.pinned; writeNotes(notes); }
+  return { ok: true };
+});
+
+// ─── AI Chat IPC (Google GenAI) ───────────────────────────────────────────────
+let genaiInstance = null;
+async function getGenAI() {
+  if (genaiInstance) return genaiInstance;
+  const { GoogleGenAI } = await import('@google/genai');
+  const apiKey = process.env.VITE_GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'your_api_key_here') throw new Error('API key not configured in .env');
+  genaiInstance = new GoogleGenAI({ apiKey });
+  return genaiInstance;
+}
+
+ipcMain.handle('ai:chat', async (_e, { prompt }) => {
+  const ai = await getGenAI();
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash',
+    contents: prompt,
+  });
+  return { text: response.text || 'No response.' };
+});
+
+// ─── Screenshot IPC ───────────────────────────────────────────────────────────
+const screenshotsDir = () => path.join(app.getPath('userData'), 'screenshots');
+const screenshotsIndex = () => path.join(app.getPath('userData'), 'screenshots-index.json');
+
+function ensureScreenshotsDir() { fs.mkdirSync(screenshotsDir(), { recursive: true }); }
+function readScreenshotIndex() {
+  try { return JSON.parse(fs.readFileSync(screenshotsIndex(), 'utf8')); } catch { return []; }
+}
+function writeScreenshotIndex(idx) {
+  fs.writeFileSync(screenshotsIndex(), JSON.stringify(idx, null, 2), 'utf8');
+}
+
+ipcMain.handle('screenshot:capture', async (_e, { mode }) => {
+  ensureScreenshotsDir();
+  const sources = await desktopCapturer.getSources({
+    types: mode === 'window' ? ['window'] : ['screen'],
+    thumbnailSize: { width: 1920, height: 1080 },
+  });
+  if (!sources.length) return { screenshot: null };
+  const source = sources[0];
+  const img = source.thumbnail;
+  if (img.isEmpty()) return { screenshot: null };
+
+  const id = crypto.randomUUID();
+  const filename = `${Date.now()}.png`;
+  const filePath = path.join(screenshotsDir(), filename);
+  fs.writeFileSync(filePath, img.toPNG());
+
+  // Create thumbnail preview
+  let preview;
+  try {
+    const { width } = img.getSize();
+    const thumbImg = width > 400 ? img.resize({ width: 400 }) : img;
+    preview = `data:image/png;base64,${thumbImg.toPNG().toString('base64')}`;
+  } catch (_) {
+    preview = `data:image/png;base64,${img.toPNG().toString('base64')}`;
+  }
+
+  const entry = { id, path: filePath, preview, timestamp: new Date().toISOString(), mode };
+  const idx = readScreenshotIndex();
+  idx.unshift(entry);
+  if (idx.length > 50) idx.splice(50);
+  writeScreenshotIndex(idx);
+
+  return { screenshot: entry };
+});
+
+ipcMain.handle('screenshot:getHistory', () => readScreenshotIndex());
+ipcMain.handle('screenshot:delete', (_e, { id }) => {
+  const idx = readScreenshotIndex();
+  const item = idx.find(s => s.id === id);
+  if (item?.path && fs.existsSync(item.path)) fs.unlinkSync(item.path);
+  writeScreenshotIndex(idx.filter(s => s.id !== id));
+  return { ok: true };
+});
+ipcMain.handle('screenshot:copy', (_e, { id }) => {
+  const idx = readScreenshotIndex();
+  const item = idx.find(s => s.id === id);
+  if (item?.path && fs.existsSync(item.path)) {
+    const data = fs.readFileSync(item.path);
+    clipboard.writeImage(nativeImage.createFromBuffer(data));
+    return { ok: true };
+  }
+  return { ok: false };
+});
+ipcMain.handle('screenshot:open', (_e, { id }) => {
+  const idx = readScreenshotIndex();
+  const item = idx.find(s => s.id === id);
+  if (item?.path) shell.openPath(item.path);
+  return { ok: true };
+});
+
+// ─── Settings IPC ─────────────────────────────────────────────────────────────
+const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
+function readSettings() {
+  try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch { return {}; }
+}
+
+ipcMain.handle('settings:get', () => readSettings());
+ipcMain.handle('settings:set', (_e, { settings }) => {
+  fs.writeFileSync(settingsFile(), JSON.stringify(settings, null, 2), 'utf8');
+  // Apply relevant settings
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (typeof settings.alwaysOnTop === 'boolean') mainWindow.setAlwaysOnTop(settings.alwaysOnTop);
+  }
+  if (typeof settings.launchOnStartup === 'boolean') {
+    app.setLoginItemSettings({ openAtLogin: settings.launchOnStartup });
+  }
+  return { ok: true };
+});
+
+// ─── Launcher IPC ─────────────────────────────────────────────────────────────
+function getStartMenuPaths() {
+  return [
+    path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+    path.join(process.env.PROGRAMDATA || 'C:\\ProgramData', 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+  ];
+}
+
+function scanApps(dir, results = [], depth = 0) {
+  if (depth > 3) return results;
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        scanApps(full, results, depth + 1);
+      } else if (entry.name.endsWith('.lnk') || entry.name.endsWith('.url')) {
+        results.push({
+          name: entry.name.replace(/\.(lnk|url)$/i, ''),
+          path: full,
+          type: 'app',
+        });
+      }
+    }
+  } catch (_) {}
+  return results;
+}
+
+let cachedApps = null;
+let cacheTime = 0;
+
+ipcMain.handle('launcher:search', (_e, { query }) => {
+  // Refresh cache every 60s
+  if (!cachedApps || Date.now() - cacheTime > 60000) {
+    cachedApps = [];
+    for (const dir of getStartMenuPaths()) cachedApps = scanApps(dir, cachedApps);
+    // Add built-in system commands
+    cachedApps.push(
+      { name: 'Calculator', path: 'calc.exe', type: 'system' },
+      { name: 'Notepad', path: 'notepad.exe', type: 'system' },
+      { name: 'Task Manager', path: 'taskmgr.exe', type: 'system' },
+      { name: 'Control Panel', path: 'control.exe', type: 'system' },
+      { name: 'File Explorer', path: 'explorer.exe', type: 'system' },
+      { name: 'Command Prompt', path: 'cmd.exe', type: 'system' },
+      { name: 'PowerShell', path: 'powershell.exe', type: 'system' },
+      { name: 'Settings', path: 'ms-settings:', type: 'system' },
+    );
+    cacheTime = Date.now();
+  }
+  const q = query.toLowerCase();
+  return cachedApps
+    .filter(a => a.name.toLowerCase().includes(q))
+    .sort((a, b) => {
+      const aStartsWith = a.name.toLowerCase().startsWith(q);
+      const bStartsWith = b.name.toLowerCase().startsWith(q);
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, 20);
+});
+
+ipcMain.handle('launcher:open', async (_e, { path: appPath, type }) => {
+  try {
+    if (type === 'system' && appPath.startsWith('ms-')) {
+      await shell.openExternal(appPath);
+    } else if (type === 'system') {
+      exec(`start "" "${appPath}"`);
+    } else {
+      await shell.openPath(appPath);
+    }
+    return { ok: true };
+  } catch (err) {
+    console.warn('[Launcher] open error:', err.message);
+    return { ok: false, error: err.message };
+  }
+});
+
+// ─── Terminal IPC ─────────────────────────────────────────────────────────────
+ipcMain.handle('terminal:exec', (_e, { command }) => {
+  return new Promise((resolve) => {
+    exec(command, {
+      shell: 'powershell.exe',
+      timeout: 30000,
+      maxBuffer: 1024 * 1024,
+      env: { ...process.env },
+    }, (error, stdout, stderr) => {
+      resolve({
+        stdout: stdout || '',
+        stderr: stderr || (error ? error.message : ''),
+        code: error ? error.code : 0,
+      });
+    });
+  });
+});
+
+// ─── Browser IPC ──────────────────────────────────────────────────────────────
+const bookmarksFile = () => path.join(app.getPath('userData'), 'browser-bookmarks.json');
+const browserHistFile = () => path.join(app.getPath('userData'), 'browser-history.json');
+
+ipcMain.handle('browser:getBookmarks', () => {
+  try { return JSON.parse(fs.readFileSync(bookmarksFile(), 'utf8')); } catch { return []; }
+});
+ipcMain.handle('browser:saveBookmark', (_e, { url, title }) => {
+  let bm;
+  try { bm = JSON.parse(fs.readFileSync(bookmarksFile(), 'utf8')); } catch { bm = []; }
+  if (!bm.find(b => b.url === url)) { bm.unshift({ url, title, addedAt: new Date().toISOString() }); }
+  if (bm.length > 50) bm.splice(50);
+  fs.writeFileSync(bookmarksFile(), JSON.stringify(bm, null, 2), 'utf8');
+  return { ok: true };
+});
+ipcMain.handle('browser:getHistory', () => {
+  try { return JSON.parse(fs.readFileSync(browserHistFile(), 'utf8')); } catch { return []; }
+});
+ipcMain.handle('browser:addHistory', (_e, { url, title }) => {
+  let hist;
+  try { hist = JSON.parse(fs.readFileSync(browserHistFile(), 'utf8')); } catch { hist = []; }
+  hist = hist.filter(h => h.url !== url);
+  hist.unshift({ url, title, visitedAt: new Date().toISOString() });
+  if (hist.length > 100) hist.splice(100);
+  fs.writeFileSync(browserHistFile(), JSON.stringify(hist, null, 2), 'utf8');
+  return { ok: true };
 });
 
 function toggleWindowVisibility() {

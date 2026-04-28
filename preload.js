@@ -11,18 +11,48 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   invoke: (channel, data) => {
     const allowed = [
+      // Clipboard
       'clipboard:copy',
       'clipboard:getHistory',
       'clipboard:deleteItem',
       'clipboard:clearAll',
       'clipboard:copyItem',
+      // Notifications
       'notify',
+      // Workspace
       'workspace:save',
       'workspace:list',
       'workspace:restore',
       'workspace:delete',
+      // Dock
       'dock:applyLayout',
       'dock:setExpanded',
+      // Notes
+      'notes:list',
+      'notes:save',
+      'notes:delete',
+      'notes:togglePin',
+      // AI
+      'ai:chat',
+      // Screenshots
+      'screenshot:capture',
+      'screenshot:getHistory',
+      'screenshot:delete',
+      'screenshot:copy',
+      'screenshot:open',
+      // Settings
+      'settings:get',
+      'settings:set',
+      // Launcher
+      'launcher:search',
+      'launcher:open',
+      // Terminal
+      'terminal:exec',
+      // Browser
+      'browser:getBookmarks',
+      'browser:saveBookmark',
+      'browser:getHistory',
+      'browser:addHistory',
     ];
     if (allowed.includes(channel)) {
       return ipcRenderer.invoke(channel, data);
