@@ -358,10 +358,10 @@ function createWindow() {
 
   mainWindow = new BrowserWindow({
     width: 480,
-    height: 80,
+    height: 140,
     // Default: horizontally centered, slightly above the bottom taskbar
     x: Math.round(screenWidth / 2 - 240),
-    y: screenHeight - 120,
+    y: screenHeight - 150,
     // important for clean overlay on Windows
     frame: false,
     transparent: true,
@@ -542,8 +542,8 @@ ipcMain.handle('dock:setExpanded', async (_event, { expanded }) => {
   } else {
     const bounds = mainWindow.collapsedBounds || {
       x: Math.round(screenWidth / 2 - 240),
-      y: screenHeight - 120,
-      width: 480, height: 80
+      y: screenHeight - 150,
+      width: 480, height: 140
     };
     mainWindow.setBounds(bounds);
     mainWindow.setResizable(false);
@@ -613,6 +613,29 @@ ipcMain.handle('ai:chat', async (_e, { prompt }) => {
     contents: prompt,
   });
   return { text: response.text || 'No response.' };
+});
+
+ipcMain.handle('ai:transcribe', async (_e, { audio, language }) => {
+  try {
+    const ai = await getGenAI();
+    const audioBuffer = Buffer.from(audio, 'base64');
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType: 'audio/webm', data: audio } },
+            { text: `Transcribe this audio to text. The language is ${language || 'en'}. Return ONLY the transcribed text, nothing else.` },
+          ],
+        },
+      ],
+    });
+    return { text: response.text || '' };
+  } catch (err) {
+    console.error('[AI:Transcribe] Error:', err.message);
+    throw new Error('Transcription failed: ' + (err.message || 'Unknown error'));
+  }
 });
 
 // ─── Screenshot IPC ───────────────────────────────────────────────────────────

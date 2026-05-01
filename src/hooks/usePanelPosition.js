@@ -9,9 +9,9 @@ export const PANEL_BASE_STYLE = {
   height: 480,
   maxHeight: '80vh',
   borderRadius: 16,
-  background: 'radial-gradient(circle at top left, #1e2330, #111418)',
-  border: '1px solid rgba(255,255,255,0.09)',
-  boxShadow: '0 12px 48px rgba(0,0,0,0.55)',
+  background: 'rgba(22, 24, 32, 0.95)',
+  border: '1px solid rgba(255, 255, 255, 0.07)',
+  boxShadow: '0 16px 48px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.2)',
   padding: '14px 14px 12px',
   color: 'white',
   display: 'flex',
@@ -20,9 +20,10 @@ export const PANEL_BASE_STYLE = {
   zIndex: 9500,
   pointerEvents: 'auto',
   WebkitAppRegion: 'no-drag',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
+  fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
   boxSizing: 'border-box',
   overflow: 'hidden',
+  opacity: 0,
 };
 
 export const HEADER_STYLE = {
@@ -33,41 +34,45 @@ export const HEADER_STYLE = {
 };
 
 export const TITLE_STYLE = {
-  fontSize: 15, fontWeight: 700, flex: 1, letterSpacing: '-0.01em',
+  fontSize: 14, fontWeight: 600, flex: 1, letterSpacing: '-0.01em',
+  color: '#fff',
 };
 
 export const CLOSE_BTN = {
-  background: 'none', border: 'none', cursor: 'pointer',
+  background: 'rgba(255, 255, 255, 0.06)',
+  border: '1px solid rgba(255, 255, 255, 0.06)',
+  cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  borderRadius: 5, padding: '4px', flexShrink: 0,
-  color: 'rgba(255,255,255,0.4)', fontSize: 16, lineHeight: 1,
-  transition: 'color 0.15s', WebkitAppRegion: 'no-drag',
+  borderRadius: 7, padding: '4px', flexShrink: 0,
+  color: 'rgba(255,255,255,0.35)', fontSize: 13, lineHeight: 1,
+  transition: 'all 0.15s ease', WebkitAppRegion: 'no-drag',
+  width: 24, height: 24,
 };
 
 export const INPUT_STYLE = {
-  background: 'rgba(255,255,255,0.06)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(255, 255, 255, 0.05)',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
   borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 12,
   outline: 'none', width: '100%', boxSizing: 'border-box',
   WebkitAppRegion: 'no-drag',
+  transition: 'border-color 0.15s ease',
+  fontFamily: 'inherit',
 };
 
 export const SCROLL_AREA = {
   flex: 1, overflowY: 'auto', minHeight: 0,
   display: 'flex', flexDirection: 'column', gap: 4,
-  scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+  scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent',
   WebkitAppRegion: 'no-drag',
 };
 
 /**
- * Centers the panel on first open, then leaves position alone so
- * drag + resize work freely.
+ * Centers the panel on first open.
+ * Waits for the Electron window to finish resizing to fullscreen before positioning.
  */
 export function usePanelPosition(isOpen, panelRef, dockAction, panelWidth = PANEL_WIDTH) {
-  // Track whether we've already positioned this panel
   const hasPositioned = useRef(false);
 
-  // Reset when panel closes so it re-centers next time it opens
   useEffect(() => {
     if (!isOpen) hasPositioned.current = false;
   }, [isOpen]);
@@ -75,42 +80,69 @@ export function usePanelPosition(isOpen, panelRef, dockAction, panelWidth = PANE
   useLayoutEffect(() => {
     if (!isOpen || !panelRef.current || hasPositioned.current) return;
 
-    requestAnimationFrame(() => {
-      if (!panelRef.current) return;
+    // The Electron window resizes from ~480x140 to fullscreen when a panel opens.
+    // We need to wait for that resize to complete before centering.
+    let cancelled = false;
+
+    const positionPanel = () => {
+      if (cancelled || !panelRef.current) return;
+
+      const vW = window.innerWidth;
+      const vH = window.innerHeight;
+
+      // If viewport is still the small dock size, wait for resize
+      if (vW < 600 || vH < 400) return;
 
       const pW = panelRef.current.offsetWidth || panelWidth;
       const pH = panelRef.current.offsetHeight || 480;
-      const vW = window.innerWidth, vH = window.innerHeight;
 
-      // Center the panel
-      const tx = (vW / 2) - (pW / 2);
-      const ty = (vH / 2) - (pH / 2) - 30;
+      const tx = Math.round((vW - pW) / 2);
+      const ty = Math.round(Math.max(40, (vH - pH) / 2 - 20));
 
-      panelRef.current.style.left = `${Math.round(tx)}px`;
-      panelRef.current.style.top = `${Math.round(Math.max(12, ty))}px`;
-
-      // Add the animation class
+      panelRef.current.style.left = `${tx}px`;
+      panelRef.current.style.top = `${ty}px`;
       panelRef.current.classList.add('macos-pop');
 
       hasPositioned.current = true;
-    });
+    };
+
+    // Try positioning on resize events (fired when electron window expands)
+    const onResize = () => {
+      if (hasPositioned.current) return;
+      positionPanel();
+      if (hasPositioned.current) {
+        window.removeEventListener('resize', onResize);
+      }
+    };
+
+    window.addEventListener('resize', onResize);
+
+    // Also try after a short delay as fallback
+    const timer = setTimeout(() => {
+      if (!hasPositioned.current) positionPanel();
+    }, 150);
+
+    // Try immediately in case window is already fullscreen
+    requestAnimationFrame(positionPanel);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('resize', onResize);
+      clearTimeout(timer);
+    };
   }, [isOpen, panelWidth]);
 }
 
 /**
  * Makes a panel draggable by its header area.
- * Listens for mousedown on elements with [data-drag-handle] inside the panel.
  */
 export function useDraggable(panelRef) {
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
 
   const onMouseDown = useCallback((e) => {
-    // Only start drag from the header (data-drag-handle) or its child text nodes
-    // But NOT from buttons inside the header
     const handle = e.target.closest('[data-drag-handle]');
     if (!handle) return;
-    // Don't drag if clicking a button or input inside the header
     if (e.target.closest('button, input, select, textarea, a')) return;
 
     e.preventDefault();
@@ -121,8 +153,6 @@ export function useDraggable(panelRef) {
 
     const rect = el.getBoundingClientRect();
     offset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-
-    // Set grabbing cursor on the handle
     handle.style.cursor = 'grabbing';
 
     const onMouseMove = (ev) => {
@@ -132,13 +162,10 @@ export function useDraggable(panelRef) {
       let newX = ev.clientX - offset.current.x;
       let newY = ev.clientY - offset.current.y;
 
-      // Clamp to viewport so the panel can't be dragged entirely offscreen
       const vW = window.innerWidth;
       const vH = window.innerHeight;
       const pW = panelRef.current.offsetWidth;
-      const pH = panelRef.current.offsetHeight;
 
-      // Keep at least 60px visible on each axis
       const minVisible = 60;
       newX = Math.max(-pW + minVisible, Math.min(newX, vW - minVisible));
       newY = Math.max(0, Math.min(newY, vH - minVisible));

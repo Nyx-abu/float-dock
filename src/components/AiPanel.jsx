@@ -13,10 +13,11 @@ const QUICK_ACTIONS = [
 
 function TypingIndicator() {
   return (
-    <div style={{ display: 'flex', gap: 4, padding: '4px 0' }}>
+    <div style={{ display: 'flex', gap: 5, padding: '6px 0', alignItems: 'center' }}>
       {[1, 2, 3].map(i => (
         <span key={i} style={{
-          width: 6, height: 6, borderRadius: '50%', background: '#6e7dff',
+          width: 7, height: 7, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #6e7dff, #4ac1ff)',
           animation: `aiDot${i} 1.4s infinite ease-in-out`,
         }} />
       ))}
@@ -61,13 +62,20 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
   }, [input, loading, api]);
 
   const handleQuickAction = useCallback(async (action) => {
-    // Try to read clipboard
     let clipContent = '';
     try {
       clipContent = await navigator.clipboard.readText();
     } catch (_) {}
-    sendMessage(action.prefix + (clipContent || '[paste your content here]'));
-  }, [sendMessage]);
+    const text = action.prefix + (clipContent || '[paste your content here]');
+    setInput(text);
+    // Focus and move cursor to end
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.setSelectionRange(text.length, text.length);
+      }
+    }, 50);
+  }, []);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -80,7 +88,7 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
       isOpen={isOpen}
       dockAction="sparkle"
       defaultWidth={420}
-      defaultHeight={480}
+      defaultHeight={500}
       minWidth={300}
       minHeight={300}
     >
@@ -89,14 +97,19 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
         <span style={TITLE_STYLE}>✨ AI Assistant</span>
         {messages.length > 0 && (
           <button onClick={() => setMessages([])} style={{
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 6, color: 'rgba(255,255,255,0.5)', fontSize: 11, padding: '4px 8px',
-            cursor: 'pointer', WebkitAppRegion: 'no-drag',
-          }}>Clear</button>
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 7, color: 'rgba(255,255,255,0.4)', fontSize: 10.5, padding: '4px 10px',
+            cursor: 'pointer', WebkitAppRegion: 'no-drag', fontWeight: 500,
+            transition: 'all 0.15s',
+            fontFamily: 'inherit',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+          >Clear</button>
         )}
         <button onClick={onClose} style={CLOSE_BTN}
-          onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>✕</button>
+          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,59,48,0.15)'; e.currentTarget.style.borderColor = 'rgba(255,59,48,0.3)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>✕</button>
       </div>
 
       {/* Quick Actions (shown when no messages) */}
@@ -104,61 +117,81 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, flexShrink: 0 }}>
           {QUICK_ACTIONS.map(a => (
             <button key={a.label} onClick={() => handleQuickAction(a)} style={{
-              background: 'rgba(110,125,255,0.08)', border: '1px solid rgba(110,125,255,0.15)',
-              borderRadius: 20, color: '#9aa5ff', fontSize: 11, padding: '5px 10px',
+              background: 'rgba(110,125,255,0.06)',
+              border: '1px solid rgba(110,125,255,0.12)',
+              borderRadius: 20, color: '#9aa5ff', fontSize: 10.5, padding: '6px 12px',
               cursor: 'pointer', whiteSpace: 'nowrap', WebkitAppRegion: 'no-drag',
-            }}>{a.label}</button>
+              fontWeight: 500, transition: 'all 0.2s', fontFamily: 'inherit',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(110,125,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(110,125,255,0.25)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(110,125,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(110,125,255,0.12)'; }}
+            >{a.label}</button>
           ))}
         </div>
       )}
 
       {/* Messages */}
       <div ref={scrollRef} style={{
-        flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8,
-        scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+        flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10,
+        scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent',
       }}>
         {messages.length === 0 && !loading && (
-          <div style={{ textAlign: 'center', padding: 32 }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>✨</div>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>Ask me anything or use a quick action above.</p>
+          <div style={{ textAlign: 'center', padding: 40, animation: 'fadeInUp 0.4s ease' }}>
+            <div style={{ fontSize: 36, marginBottom: 12, filter: 'drop-shadow(0 0 12px rgba(110,125,255,0.3))' }}>✨</div>
+            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, lineHeight: 1.6 }}>
+              Ask me anything or use a quick action above.
+            </p>
           </div>
         )}
         {messages.map((msg, i) => (
           <div key={i} style={{
             alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            maxWidth: '85%', padding: '8px 12px', borderRadius: 12,
+            maxWidth: '85%', padding: '10px 14px', borderRadius: 14,
             background: msg.role === 'user'
-              ? 'linear-gradient(135deg, rgba(110,125,255,0.25), rgba(110,125,255,0.15))'
-              : msg.error ? 'rgba(255,107,107,0.1)' : 'rgba(255,255,255,0.06)',
-            border: `1px solid ${msg.role === 'user' ? 'rgba(110,125,255,0.2)' : msg.error ? 'rgba(255,107,107,0.2)' : 'rgba(255,255,255,0.08)'}`,
-            fontSize: 12, lineHeight: 1.6, color: msg.error ? '#ff8787' : 'rgba(255,255,255,0.85)',
+              ? 'linear-gradient(135deg, rgba(110,125,255,0.2), rgba(74,193,255,0.1))'
+              : msg.error ? 'rgba(255,107,107,0.08)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${msg.role === 'user' ? 'rgba(110,125,255,0.15)' : msg.error ? 'rgba(255,107,107,0.15)' : 'rgba(255,255,255,0.06)'}`,
+            fontSize: 12, lineHeight: 1.7, color: msg.error ? '#ff8787' : 'rgba(255,255,255,0.85)',
             whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            animation: 'fadeInUp 0.25s ease',
+            boxShadow: msg.role === 'user' ? '0 4px 16px rgba(110,125,255,0.08)' : 'none',
           }}>{msg.text}</div>
         ))}
         {loading && (
           <div style={{
-            alignSelf: 'flex-start', padding: '8px 12px', borderRadius: 12,
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
+            alignSelf: 'flex-start', padding: '10px 14px', borderRadius: 14,
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
           }}><TypingIndicator /></div>
         )}
       </div>
 
       {/* Input Area */}
-      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
+      <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'flex-end' }}>
+        <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Ask anything…" disabled={loading}
+          rows={Math.min(4, Math.max(1, input.split('\n').length))}
           style={{
-            flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 8, padding: '10px 12px', color: '#fff', fontSize: 12, outline: 'none',
-            WebkitAppRegion: 'no-drag',
-          }} />
+            flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 12, outline: 'none',
+            WebkitAppRegion: 'no-drag', fontFamily: 'inherit', resize: 'none',
+            transition: 'border-color 0.2s', lineHeight: 1.5,
+            maxHeight: 100, minHeight: 38,
+          }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(110,125,255,0.3)'; }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+        />
         <button onClick={() => sendMessage()} disabled={loading || !input.trim()} style={{
-          padding: '0 14px', borderRadius: 8,
-          background: input.trim() && !loading ? 'rgba(110,125,255,0.2)' : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${input.trim() && !loading ? 'rgba(110,125,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
-          color: input.trim() && !loading ? '#9aa5ff' : 'rgba(255,255,255,0.2)',
-          fontSize: 14, cursor: input.trim() && !loading ? 'pointer' : 'default', WebkitAppRegion: 'no-drag',
-        }}>→</button>
+          padding: '10px 16px', borderRadius: 10,
+          background: input.trim() && !loading
+            ? 'rgba(110,125,255,0.2)'
+            : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${input.trim() && !loading ? 'rgba(110,125,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+          color: input.trim() && !loading ? '#9aa5ff' : 'rgba(255,255,255,0.15)',
+          fontSize: 14, cursor: input.trim() && !loading ? 'pointer' : 'default',
+          WebkitAppRegion: 'no-drag', transition: 'all 0.15s',
+          height: 38,
+        }}>↑</button>
       </div>
     </ResizablePanel>
   );

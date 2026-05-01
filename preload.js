@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       'notes:togglePin',
       // AI
       'ai:chat',
+      'ai:transcribe',
       // Screenshots
       'screenshot:capture',
       'screenshot:getSources',

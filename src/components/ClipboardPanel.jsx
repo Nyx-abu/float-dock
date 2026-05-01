@@ -125,7 +125,7 @@ const btnBase = {
     WebkitAppRegion: 'no-drag',
 };
 
-function ItemRow({ item, onCopy, onDelete }) {
+function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
     const [copied, setCopied] = useState(false);
     const [hovered, setHovered] = useState(false);
 
@@ -136,10 +136,22 @@ function ItemRow({ item, onCopy, onDelete }) {
         setTimeout(() => setCopied(false), 1500);
     };
 
+    const handleRowClick = () => {
+        // Click image items to preview, text items to copy
+        if (item.type === 'image' && item.preview && onPreviewImage) {
+            onPreviewImage(item.preview);
+        } else {
+            onCopy(item.id);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        }
+    };
+
     return (
         <div
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
+            onClick={handleRowClick}
             style={{
                 display: 'flex', flexDirection: 'column', gap: 6,
                 padding: '8px 10px', borderRadius: 8,
@@ -149,6 +161,7 @@ function ItemRow({ item, onCopy, onDelete }) {
                 border: `1px solid ${copied ? 'rgba(74,193,255,0.3)' : 'rgba(255,255,255,0.06)'}`,
                 transition: 'background 0.15s, border 0.15s',
                 WebkitAppRegion: 'no-drag',
+                cursor: 'pointer',
             }}
         >
             {/* Header row */}
@@ -189,7 +202,7 @@ function ItemRow({ item, onCopy, onDelete }) {
             </div>
 
             {/* Content preview */}
-            <div style={{ paddingLeft: 2, cursor: 'default' }}>
+            <div style={{ paddingLeft: 2 }}>
                 {item.type === 'color' && <ColorSwatch hex={item.content} />}
                 {item.type === 'image' && <ImagePreview src={item.preview} />}
                 {item.type === 'file' && <FilePreview content={item.content} paths={item.paths} />}
@@ -203,6 +216,31 @@ function ItemRow({ item, onCopy, onDelete }) {
                     }}>{item.content}</p>
                 )}
             </div>
+        </div>
+    );
+}
+
+function ImageOverlay({ src, onClose }) {
+    return (
+        <div onClick={onClose} style={{
+            position: 'fixed', inset: 0, zIndex: 99999,
+            background: 'rgba(0, 0, 0, 0.85)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'zoom-out',
+            animation: 'fadeInUp 0.15s ease',
+        }}>
+            <img src={src} alt="Preview" style={{
+                maxWidth: '90%', maxHeight: '90%', borderRadius: 8,
+                objectFit: 'contain',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            }} />
+            <button onClick={onClose} style={{
+                position: 'absolute', top: 16, right: 16,
+                background: 'rgba(255,255,255,0.1)', border: 'none',
+                color: '#fff', fontSize: 18, width: 36, height: 36,
+                borderRadius: '50%', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>✕</button>
         </div>
     );
 }
@@ -224,6 +262,7 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
     const [items, setItems] = useState([]);
     const [filter, setFilter] = useState('all');
     const [loading, setLoading] = useState(false);
+    const [previewImage, setPreviewImage] = useState(null);
     const panelRef = useRef(null);
     const api = useMemo(() => window.electronAPI, []);
 
@@ -351,7 +390,8 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
                         }}>{lbl}</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             {grpItems.map(item => (
-                                <ItemRow key={item.id} item={item} onCopy={handleCopy} onDelete={handleDelete} />
+                                <ItemRow key={item.id} item={item} onCopy={handleCopy} onDelete={handleDelete}
+                                    onPreviewImage={setPreviewImage} />
                             ))}
                         </div>
                     </div>
@@ -360,5 +400,11 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
         </ResizablePanel>
     );
 
-    return ReactDOM.createPortal(panel, document.body);
+    return ReactDOM.createPortal(
+        <>
+            {panel}
+            {previewImage && <ImageOverlay src={previewImage} onClose={() => setPreviewImage(null)} />}
+        </>,
+        document.body
+    );
 }

@@ -16,12 +16,15 @@ const DOCK_ITEMS = [
   { id: 'folder', action: 'folder', tooltip: 'Snapshots', icon: <SnapsIcon /> },
   { id: 'terminal', action: 'terminal', tooltip: 'Terminal', icon: <TerminalIcon /> },
   { id: 'browser', action: 'browser', tooltip: 'Browser', icon: <BrowserIcon /> },
+  { id: 'sep1', separator: true },
   { id: 'camera', action: 'camera', tooltip: 'Screenshots', icon: <CameraIcon /> },
   { id: 'sparkle', action: 'sparkle', tooltip: 'AI Assistant', icon: <SparkleIcon /> },
   { id: 'clipboard', action: 'clipboard', tooltip: 'Clipboard History', icon: <ClipboardIcon /> },
   { id: 'mic', action: 'mic', tooltip: 'Voice to Text', icon: <MicIcon /> },
+  { id: 'sep2', separator: true },
   { id: 'lightning', action: 'lightning', tooltip: 'Quick Launcher', icon: <LightningIcon /> },
   { id: 'notes', action: 'notes', tooltip: 'Quick Notes', icon: <NotesIcon /> },
+  { id: 'sep3', separator: true },
   { id: 'settings', action: 'settings', tooltip: 'Settings', icon: <SettingsIcon /> },
 ];
 
@@ -152,7 +155,11 @@ export default function DockMenu({ onAction, activePanel }) {
     <>
       <div className={`dock-menu${openPanel ? ' panel-open' : ''}`}>
         <div className="dock-items" ref={dockRef}>
-          {DOCK_ITEMS.map((item) => (
+          {DOCK_ITEMS.map((item) => {
+            if (item.separator) {
+              return <div key={item.id} className="dock-separator" />;
+            }
+            return (
             <button
               key={item.id}
               className={`dock-item ${activePanel === item.action ? 'active' : ''} ${item.id === 'folder' && snapsReady ? 'snaps-ready' : ''}`}
@@ -170,7 +177,8 @@ export default function DockMenu({ onAction, activePanel }) {
                 <span className="snaps-indicator" />
               )}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 

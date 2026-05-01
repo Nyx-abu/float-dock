@@ -68,30 +68,25 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
 
         setIsTranscribing(true);
         try {
-          const formData = new FormData();
-          formData.append('file', blob, 'audio.webm');
-          formData.append('model', 'whisper-1');
-          formData.append('language', language.split('-')[0]);
+          // Convert blob to base64 and send to main process for transcription
+          const reader = new FileReader();
+          const base64Promise = new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+          });
+          reader.readAsDataURL(blob);
+          const base64Audio = await base64Promise;
 
-          const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-            method: 'POST',
-            headers: {
-              'Authorization': 'Bearer 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'
-            },
-            body: formData
+          const result = await api.invoke('ai:transcribe', {
+            audio: base64Audio,
+            language: language.split('-')[0],
           });
 
-          if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`Whisper API error: ${response.status} ${errText}`);
-          }
-
-          const data = await response.json();
-          if (data.text) {
-            setTranscript(prev => prev + (prev ? ' ' : '') + data.text);
+          if (result?.text) {
+            setTranscript(prev => prev + (prev ? ' ' : '') + result.text);
           }
         } catch (err) {
-          setError(err.message);
+          setError(err.message || 'Transcription failed');
         } finally {
           setIsTranscribing(false);
         }

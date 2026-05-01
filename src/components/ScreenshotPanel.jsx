@@ -7,6 +7,7 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
   const [screenshots, setScreenshots] = useState([]);
   const [capturing, setCapturing] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
   
   // Window selection state
   const [selectingWindow, setSelectingWindow] = useState(false);
@@ -128,7 +129,8 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
               <ScreenshotCard key={ss.id} ss={ss} copied={copied === ss.id}
                 onCopy={() => handleCopy(ss.id)}
                 onDelete={() => handleDelete(ss.id)}
-                onOpen={() => handleOpen(ss.id)} />
+                onOpen={() => handleOpen(ss.id)}
+                onPreview={() => setPreviewImage(ss.preview)} />
             ))}
           </div>
         </>
@@ -169,10 +171,37 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
     </ResizablePanel>
   );
 
-  return ReactDOM.createPortal(panel, document.body);
+  return ReactDOM.createPortal(
+    <>
+      {panel}
+      {previewImage && (
+        <div onClick={() => setPreviewImage(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'zoom-out',
+          animation: 'fadeInUp 0.15s ease',
+        }}>
+          <img src={previewImage} alt="Preview" style={{
+            maxWidth: '90%', maxHeight: '90%', borderRadius: 8,
+            objectFit: 'contain',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          }} />
+          <button onClick={() => setPreviewImage(null)} style={{
+            position: 'absolute', top: 16, right: 16,
+            background: 'rgba(255,255,255,0.1)', border: 'none',
+            color: '#fff', fontSize: 18, width: 36, height: 36,
+            borderRadius: '50%', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>✕</button>
+        </div>
+      )}
+    </>,
+    document.body
+  );
 }
 
-function ScreenshotCard({ ss, copied, onCopy, onDelete, onOpen }) {
+function ScreenshotCard({ ss, copied, onCopy, onDelete, onOpen, onPreview }) {
   const [hovered, setHovered] = useState(false);
   const time = (() => { try { return new Date(ss.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { return ''; } })();
 
@@ -182,13 +211,20 @@ function ScreenshotCard({ ss, copied, onCopy, onDelete, onOpen }) {
         borderRadius: 8, overflow: 'hidden', position: 'relative',
         background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
         cursor: 'pointer', WebkitAppRegion: 'no-drag',
+        transition: 'border-color 0.15s',
+        borderColor: hovered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
       }}>
-      <img src={ss.preview} alt="screenshot" onClick={onOpen}
+      <img src={ss.preview} alt="screenshot" onClick={onPreview}
         style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
       <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
         <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', flex: 1 }}>{time}</span>
         {hovered && (
           <>
+            <button onClick={e => { e.stopPropagation(); onOpen(); }} title="Open in Explorer"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: 11, padding: 2, WebkitAppRegion: 'no-drag' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#4ac1ff'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+            >📂</button>
             <button onClick={e => { e.stopPropagation(); onCopy(); }} title="Copy"
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#4ac1ff' : 'rgba(255,255,255,0.4)', fontSize: 11, padding: 2, WebkitAppRegion: 'no-drag' }}>
               {copied ? '✓' : '📋'}
