@@ -1,10 +1,12 @@
 <div align="center">
 
-<img src="assets/hero-banner.png" alt="Float Dock Banner" width="100%" />
-
-<br />
-
-# ⚓ Float Dock
+```
+  _____ _             _     ____             _    
+ |  ___| | ___   __ _| |_  |  _ \  ___   ___| | __
+ | |_  | |/ _ \ / _` | __| | | | |/ _ \ / __| |/ /
+ |  _| | | (_) | (_| | |_  | |_| | (_) | (__|   < 
+ |_|   |_|\___/ \__,_|\__| |____/ \___/ \___|_|\_\
+```
 
 ### A sleek, floating productivity dock for Windows
 
@@ -34,32 +36,26 @@ AI assistant · Clipboard history · Terminal · Browser · Screenshots · Voice
 
 ## ✨ What is Float Dock?
 
-Float Dock is a **macOS-inspired floating dock** for Windows that puts 10 essential productivity tools at your fingertips. It hovers above all windows as a sleek, translucent bar — click any icon to launch a draggable, resizable panel.
+Float Dock is a **macOS-inspired floating dock** for Windows that puts 10 essential productivity tools at your fingertips. It hovers above all windows as a sleek, dark bar — click any icon to launch a draggable, resizable panel.
 
-Built with **Electron + React + Vite**, it features a premium dark glassmorphism UI with buttery-smooth animations, and runs as a lightweight overlay that stays out of your way until you need it.
+Built with **Electron + React + Vite**, it features a premium dark UI with smooth animations, and runs as a lightweight overlay that stays out of your way until you need it.
 
 <br/>
 
 ## 🎨 Features
-
-<div align="center">
-<img src="assets/features.png" alt="Feature Overview" width="80%" />
-</div>
-
-<br/>
 
 <table>
 <tr>
 <td width="50%">
 
 ### ✨ AI Assistant
-Chat with **Gemini 2.5 Flash** directly from your dock. Quick actions let you summarize, translate, fix code, or explain anything from your clipboard with one click.
+Chat with **Gemini 2.5 Flash** directly from your dock. Quick actions let you summarize, translate, fix code, or explain anything from your clipboard — fills your input so you can edit before sending.
 
 </td>
 <td width="50%">
 
 ### 📋 Clipboard History
-System-wide clipboard manager tracking **text, images, files, links, and hex colors**. Filter by type, search, and re-copy any item. Stores up to 200 entries with intelligent deduplication.
+System-wide clipboard manager tracking **text, images, files, links, and hex colors**. Filter by type, click any item to copy. Click images for a **fullscreen preview**. Stores up to 200 entries with intelligent deduplication.
 
 </td>
 </tr>
@@ -81,13 +77,13 @@ A built-in browser with URL bar, bookmarks, history, and navigation controls. Br
 <td>
 
 ### 📸 Screenshots
-Capture **full screen** or **individual windows** instantly. Screenshots are saved, thumbnailed, and browsable from a gallery. Copy, open, or delete with one click.
+Capture **full screen** or **individual windows** instantly. Screenshots are saved, thumbnailed, and browsable from a gallery. Click to **preview fullscreen**, copy, open in explorer, or delete.
 
 </td>
 <td>
 
 ### 🎤 Voice to Text
-Speech recognition powered by the **Web Speech API**. Dictate text and copy the transcription to your clipboard — perfect for quick notes.
+Speech recognition powered by **Gemini AI**. Record audio, get transcription via the main process — your API key never touches the renderer.
 
 </td>
 </tr>
@@ -126,8 +122,8 @@ Configure dock position, always-on-top behavior, launch-on-startup, clipboard li
 <div align="center">
 <img src="assets/ai-panel.png" alt="AI Panel" width="45%" />
 &nbsp;&nbsp;&nbsp;
-<img src="assets/clipboard-panel.png" alt="Clipboard Panel" width="45%" />
-<p><em>AI Assistant and Clipboard History panels — draggable, resizable, beautiful</em></p>
+<img src="assets/settings-panel.png" alt="Settings Panel" width="45%" />
+<p><em>AI Assistant and Settings panels — draggable, resizable, clean dark UI</em></p>
 </div>
 
 <br/>
@@ -138,7 +134,7 @@ Configure dock position, always-on-top behavior, launch-on-startup, clipboard li
 
 - **Node.js** 18+ and **npm**
 - **Windows 10/11** (primary platform)
-- A **Gemini API key** from [Google AI Studio](https://aistudio.google.com/apikey) (for the AI feature)
+- A **Gemini API key** from [Google AI Studio](https://aistudio.google.com/apikey) (for AI & voice features)
 
 ### Installation
 
@@ -225,7 +221,7 @@ float-dock/
 | **UI** | React 18 | Component-based UI |
 | **Build** | Vite 5 | Fast HMR & bundling |
 | **Terminal** | xterm.js + node-pty | Embedded terminal emulator |
-| **AI** | Google Gemini 2.5 Flash | AI chat & text processing |
+| **AI** | Google Gemini 2.5 Flash | AI chat, text processing & voice transcription |
 | **Panels** | re-resizable | Resizable panel containers |
 
 <br/>
@@ -243,7 +239,7 @@ Float Dock takes security seriously, especially as a desktop application with sy
 | **Input Validation** | Shell commands use argument arrays (no string interpolation) to prevent injection |
 | **Path Traversal Protection** | File operations validate paths are within expected directories |
 | **Webview Sandboxing** | Browser panel uses isolated partition and blocks dangerous URL schemes |
-| **API Key Safety** | `.env` is gitignored; keys never enter version control |
+| **API Key Safety** | `.env` is gitignored; all API calls go through the main process — keys never touch the renderer |
 
 <br/>
 
@@ -253,7 +249,8 @@ Float Dock takes security seriously, especially as a desktop application with sy
 - **Resize from any edge** — all panels support 8-direction resizing
 - **Toggle with hotkey** — `Ctrl+Shift+D` hides/shows the dock instantly
 - **Clipboard auto-tracks** — just copy anything on your system and it appears in history
-- **Quick AI actions** — copy text, then click "Summarize" or "Fix Code" for instant results
+- **Click images to preview** — clipboard images and screenshots open in a fullscreen overlay
+- **Quick AI actions** — click a suggestion to fill your prompt, edit it, then send
 - **Keyboard launcher** — type to search, arrow keys to navigate, Enter to launch
 
 <br/>
