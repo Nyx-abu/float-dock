@@ -45,9 +45,19 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
     };
   }, [isOpen]);
 
+  // Blocked URL schemes that could be used for attacks
+  const BLOCKED_SCHEMES = /^(file|javascript|data|chrome|chrome-extension|vbscript|about):/i;
+
   const navigate = useCallback((targetUrl) => {
     if (!targetUrl?.trim()) return;
     let finalUrl = targetUrl.trim();
+
+    // Block dangerous URL schemes
+    if (BLOCKED_SCHEMES.test(finalUrl)) {
+      setError(`Blocked: "${finalUrl.split(':')[0]}:" URLs are not allowed for security`);
+      return;
+    }
+
     if (!/^https?:\/\//i.test(finalUrl)) {
       finalUrl = finalUrl.includes('.') ? `https://${finalUrl}` : `https://www.google.com/search?q=${encodeURIComponent(finalUrl)}`;
     }
@@ -151,11 +161,12 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
       {/* Webview or placeholder */}
       {currentUrl ? (
         <webview ref={webviewRef} src={currentUrl}
+          partition="persist:browser"
+          allowpopups="false"
           style={{
             flex: 1, borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
             minHeight: 0, background: '#ffffff',
           }}
-          /* sandbox and security */
         />
       ) : (
         <div style={{

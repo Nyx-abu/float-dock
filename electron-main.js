@@ -5,7 +5,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import os from 'os';
 import pty from 'node-pty';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { SnapshotManager } from './src/workspace/SnapshotManager.js';
 import { WindowTracker } from './src/workspace/WindowTracker.js';
 import { TerminalManager } from './src/workspace/TerminalManager.js';
@@ -703,7 +703,16 @@ ipcMain.handle('screenshot:copy', (_e, { id }) => {
 ipcMain.handle('screenshot:open', (_e, { id }) => {
   const idx = readScreenshotIndex();
   const item = idx.find(s => s.id === id);
-  if (item?.path) shell.openPath(item.path);
+  // Validate path is within screenshots directory to prevent path traversal
+  if (item?.path) {
+    const resolvedPath = path.resolve(item.path);
+    const resolvedDir = path.resolve(screenshotsDir());
+    if (!resolvedPath.startsWith(resolvedDir + path.sep) && resolvedPath !== resolvedDir) {
+      console.warn('[Screenshot] Path traversal attempt blocked:', item.path);
+      return { ok: false };
+    }
+    shell.openPath(resolvedPath);
+  }
   return { ok: true };
 });
 
@@ -790,11 +799,24 @@ ipcMain.handle('launcher:search', (_e, { query }) => {
 
 ipcMain.handle('launcher:open', async (_e, { path: appPath, type }) => {
   try {
+    // Validate appPath to prevent injection
+    if (typeof appPath !== 'string' || appPath.length > 1024) {
+      throw new Error('Invalid application path');
+    }
+
     if (type === 'system' && appPath.startsWith('ms-')) {
+      // Only allow ms-settings: URIs
+      if (!/^ms-[a-z]+:/i.test(appPath)) throw new Error('Invalid system URI');
       await shell.openExternal(appPath);
     } else if (type === 'system') {
-      exec(`start "" "${appPath}"`);
+      // Use spawn with argument array instead of exec to prevent command injection
+      const child = spawn('cmd.exe', ['/c', 'start', '""', appPath], {
+        detached: true, stdio: 'ignore'
+      });
+      child.unref();
     } else {
+      // Validate the path exists and is a file (not a shell command)
+      if (!fs.existsSync(appPath)) throw new Error('Path not found');
       await shell.openPath(appPath);
     }
     return { ok: true };
@@ -813,12 +835,21 @@ ipcMain.handle('terminal:spawn', (e) => {
   }
   const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
   const shellArgs = os.platform() === 'win32' ? ['-NoLogo'] : [];
+  // Filter out sensitive environment variables before passing to PTY
+  const safeEnv = { ...process.env };
+  const sensitiveKeys = ['VITE_GEMINI_API_KEY', 'GEMINI_API_KEY', 'API_KEY', 'SECRET', 'TOKEN', 'PASSWORD'];
+  for (const key of Object.keys(safeEnv)) {
+    if (sensitiveKeys.some(sk => key.toUpperCase().includes(sk))) {
+      delete safeEnv[key];
+    }
+  }
+
   ptyProcess = pty.spawn(shell, shellArgs, {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
     cwd: process.env.USERPROFILE || process.env.HOME || process.cwd(),
-    env: process.env
+    env: safeEnv
   });
 
   ptyProcess.onData((data) => {

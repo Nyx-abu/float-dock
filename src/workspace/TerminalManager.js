@@ -1,5 +1,7 @@
 import os from 'os';
 import { spawn } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * NOTE:
@@ -10,11 +12,45 @@ import { spawn } from 'child_process';
  * @typedef {import('./SnapshotManager').TerminalSnapshot} TerminalSnapshot
  */
 
+// Characters that could be used for shell injection
+const SHELL_META_RE = /[;&|`$<>!{}()\[\]'"\\]/;
+
+/**
+ * Validate that a path is a real, existing directory.
+ * Returns the resolved path or null.
+ */
+function validateCwd(cwd) {
+  if (!cwd || typeof cwd !== 'string') return null;
+  try {
+    const resolved = path.resolve(cwd);
+    if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
+      return resolved;
+    }
+  } catch (_) {}
+  return null;
+}
+
+/**
+ * Validate a startup command — reject anything with shell metacharacters
+ * that could be used for injection.
+ */
+function validateStartupCommand(cmd) {
+  if (!cmd || typeof cmd !== 'string') return '';
+  const trimmed = cmd.trim();
+  if (trimmed.length > 500) return ''; // unreasonably long
+  if (SHELL_META_RE.test(trimmed)) {
+    console.warn('[TerminalManager] Startup command rejected (shell metacharacters):', trimmed);
+    return '';
+  }
+  return trimmed;
+}
+
 export class TerminalManager {
   /**
    * @param {TerminalSnapshot[]} snapshots
    */
   restoreTerminals(snapshots) {
+    if (!Array.isArray(snapshots)) return;
     for (const snap of snapshots) {
       this.launchTerminal(snap);
     }
@@ -30,20 +66,24 @@ export class TerminalManager {
       return;
     }
 
-    const cwd = snap.cwd || process.cwd();
+    const cwd = validateCwd(snap.cwd) || process.cwd();
     const shell = (snap.shell || 'powershell.exe').toLowerCase();
-    const startup = snap.startupCommand ? String(snap.startupCommand) : '';
+    const startup = validateStartupCommand(snap.startupCommand);
 
-    // Use `cmd /c start` to open a new windowed terminal.
-    // PowerShell: -NoExit keeps it open.
     const isPwsh = shell.includes('powershell');
-    const command = isPwsh
-      ? `cd "${cwd}"; ${startup}`.trim()
-      : startup;
 
-    const args = isPwsh
-      ? ['/c', 'start', '""', 'powershell.exe', '-NoExit', '-Command', command]
-      : ['/c', 'start', '""', 'cmd.exe', '/k', `cd /d "${cwd}" && ${command}`];
+    // Build argument arrays instead of interpolated command strings
+    let args;
+    if (isPwsh) {
+      // PowerShell: -NoExit -WorkingDirectory <cwd>
+      const pwshArgs = ['-NoExit', '-WorkingDirectory', cwd];
+      if (startup) {
+        pwshArgs.push('-Command', startup);
+      }
+      args = ['/c', 'start', '""', 'powershell.exe', ...pwshArgs];
+    } else {
+      args = ['/c', 'start', '""', 'cmd.exe', '/k', `cd /d "${cwd}"`];
+    }
 
     try {
       const child = spawn('cmd.exe', args, { detached: true, stdio: 'ignore' });
@@ -53,4 +93,3 @@ export class TerminalManager {
     }
   }
 }
-

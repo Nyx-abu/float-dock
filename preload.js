@@ -2,7 +2,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   send: (channel, data) => {
-    ipcRenderer.send(channel, data);
+    const allowedSendChannels = [
+      'dock:setExpanded',
+    ];
+    if (allowedSendChannels.includes(channel)) {
+      ipcRenderer.send(channel, data);
+    }
   },
   on: (channel, callback) => {
     const handler = (event, data) => callback(data);
