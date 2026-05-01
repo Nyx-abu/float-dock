@@ -4,4 +4,9 @@ dist/
 .DS_Store
 .env
 .env.local
+.env.production
+.env.*.local
 out/
+.cursor/
+.idea/
+.vscode/
