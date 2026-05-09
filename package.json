@@ -9,6 +9,7 @@
     "dev:electron": "electron .",
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "build": "vite build",
+    "dist": "npm run build && electron-builder --win nsis --x64",
     "preview": "vite preview",
     "start": "electron dist/index.html"
   },
@@ -35,6 +36,52 @@
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^8.2.2",
     "electron": "^40.6.1",
+    "electron-builder": "^26.0.12",
     "vite": "^5.0.8"
+  },
+  "build": {
+    "appId": "com.floatdock.app",
+    "productName": "Float Dock",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/node-pty/**/*"
+    ],
+    "npmRebuild": false,
+    "files": [
+      "dist/**/*",
+      "electron-main.js",
+      "preload.js",
+      "src/workspace/**/*",
+      "package.json",
+      "!**/.env*",
+      "!**/*.map",
+      "!**/*.md"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Float Dock",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "runAfterFinish": true
+    }
   }
 }

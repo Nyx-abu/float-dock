@@ -4,7 +4,15 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import os from 'os';
-import pty from 'node-pty';
+import { createRequire } from 'module';
+// node-pty is a native addon — loaded via createRequire so the app still starts if it's missing
+let pty = null;
+try {
+  const require = createRequire(import.meta.url);
+  pty = require('node-pty');
+} catch (_) {
+  console.warn('[Terminal] node-pty not available — terminal feature will be disabled');
+}
 import { spawn } from 'child_process';
 import { SnapshotManager } from './src/workspace/SnapshotManager.js';
 import { WindowTracker } from './src/workspace/WindowTracker.js';
@@ -380,14 +388,42 @@ function createWindow() {
     show: false,
   });
 
-  const isDevelopment = process.env.NODE_ENV === 'development' || !app.isPackaged;
-  const devPort = process.env.VITE_PORT || '5173';
-  const indexPath = isDevelopment
-    ? `http://localhost:${devPort}`
-    : `file://${path.join(__dirname, 'dist', 'index.html')}`;
+  // Log renderer crashes and load failures
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    console.error('[Main] Renderer process gone:', details.reason, details.exitCode);
+  });
+  mainWindow.webContents.on('did-fail-load', (_e, errorCode, errorDescription) => {
+    console.error('[Main] Failed to load:', errorCode, errorDescription);
+  });
+  mainWindow.webContents.on('console-message', (_e, level, message, line, sourceId) => {
+    if (level >= 2) { // warnings and errors
+      console.warn(`[Renderer] ${message} (${sourceId}:${line})`);
+    }
+  });
 
-  mainWindow.loadURL(indexPath);
-  mainWindow.show();
+  // Show window once content has loaded
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('[Main] did-finish-load fired — showing window');
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+    }
+  });
+
+  // Fallback: guarantee the window shows within 5s even if load events don't fire
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      console.warn('[Main] Fallback: forcing window show after timeout');
+      mainWindow.show();
+    }
+  }, 5000);
+
+  const isDevelopment = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  if (isDevelopment) {
+    const devPort = process.env.VITE_PORT || '5173';
+    mainWindow.loadURL(`http://localhost:${devPort}`);
+  } else {
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  }
 
   // Start clipboard history monitoring
   getClipboardHistory().start(mainWindow);
@@ -853,6 +889,10 @@ ipcMain.handle('launcher:open', async (_e, { path: appPath, type }) => {
 let ptyProcess = null;
 
 ipcMain.handle('terminal:spawn', (e) => {
+  if (!pty) {
+    console.warn('[Terminal] node-pty not available — cannot spawn terminal');
+    return { ok: false, error: 'Terminal backend (node-pty) is not available in this build.' };
+  }
   if (ptyProcess) {
     ptyProcess.kill();
   }
