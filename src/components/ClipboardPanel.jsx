@@ -26,8 +26,8 @@ function dateLabel(iso) {
 
 const TYPE_LABELS = { text: 'Text', image: 'Image', file: 'File', link: 'Link', color: 'Color' };
 const TYPE_COLORS = {
-    text: '#6e7dff',
-    image: '#4ac1ff',
+    text: 'var(--accent)',
+    image: 'var(--accent-secondary)',
     file: '#ffd166',
     link: '#06d6a0',
     color: '#ff6b6b',
@@ -156,9 +156,9 @@ function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
                 display: 'flex', flexDirection: 'column', gap: 6,
                 padding: '8px 10px', borderRadius: 8,
                 background: copied
-                    ? 'rgba(74,193,255,0.1)'
+                    ? 'rgba(var(--accent-secondary-rgb),0.1)'
                     : hovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${copied ? 'rgba(74,193,255,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                border: `1px solid ${copied ? 'rgba(var(--accent-secondary-rgb),0.3)' : 'rgba(255,255,255,0.06)'}`,
                 transition: 'background 0.15s, border 0.15s',
                 WebkitAppRegion: 'no-drag',
                 cursor: 'pointer',
@@ -172,7 +172,7 @@ function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
                 </span>
 
                 {copied && (
-                    <span style={{ fontSize: 11, color: '#4ac1ff', fontWeight: 700, marginRight: 4 }}>
+                    <span style={{ fontSize: 11, color: 'var(--accent-secondary)', fontWeight: 700, marginRight: 4 }}>
                         Copied!
                     </span>
                 )}
@@ -183,10 +183,10 @@ function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
                     title="Copy again"
                     style={{
                         ...btnBase,
-                        color: copied ? '#4ac1ff' : 'rgba(255,255,255,0.4)',
+                        color: copied ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.4)',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#4ac1ff'}
-                    onMouseLeave={e => e.currentTarget.style.color = copied ? '#4ac1ff' : 'rgba(255,255,255,0.4)'}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.color = copied ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.4)'}
                 >
                     <CopyIcon />
                 </button>
@@ -323,9 +323,6 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
             defaultHeight={480}
             minWidth={300}
             minHeight={300}
-            style={{
-                background: 'radial-gradient(circle at top left, #1e2330, #111418)',
-            }}
         >
             {/* ── Header ── */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, WebkitAppRegion: 'no-drag' }}>

@@ -96,9 +96,6 @@ export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
       defaultHeight={360}
       minWidth={300}
       minHeight={200}
-      style={{
-        background: 'radial-gradient(circle at top left, #202733, #12141a)',
-      }}
     >
       <div style={HEADER_STYLE}>
         <div style={TITLE_STYLE}>🗂️ Workspaces</div>
@@ -124,7 +121,7 @@ export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
             border: 'none',
             background: loading
               ? 'rgba(255,255,255,0.15)'
-              : 'linear-gradient(135deg, #4ac1ff, #6e7dff)',
+              : 'linear-gradient(135deg, var(--accent-secondary), var(--accent))',
             color: 'white',
             fontSize: 13,
             cursor: loading ? 'default' : 'pointer',
@@ -193,7 +190,7 @@ export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
                   padding: '4px 8px',
                   borderRadius: 6,
                   border: 'none',
-                  background: 'linear-gradient(135deg, #4ac1ff, #6e7dff)',
+                  background: 'linear-gradient(135deg, var(--accent-secondary), var(--accent))',
                   color: 'white',
                   fontSize: 11,
                   cursor: loading ? 'default' : 'pointer',

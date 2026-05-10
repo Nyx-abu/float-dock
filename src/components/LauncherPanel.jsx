@@ -99,7 +99,7 @@ export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
               borderRadius: 8, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
-              background: i === selected ? 'rgba(110,125,255,0.12)' : 'transparent',
+              background: i === selected ? 'rgba(var(--accent-rgb),0.12)' : 'transparent',
               color: '#fff', transition: 'background 0.1s', WebkitAppRegion: 'no-drag',
             }}>
             <span style={{ fontSize: 18, width: 24, textAlign: 'center', flexShrink: 0 }}>
@@ -114,7 +114,7 @@ export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
               </div>
             </div>
             {i === selected && (
-              <span style={{ fontSize: 10, color: 'rgba(110,125,255,0.6)', fontWeight: 600, flexShrink: 0 }}>Enter ↵</span>
+              <span style={{ fontSize: 10, color: 'rgba(var(--accent-rgb),0.6)', fontWeight: 600, flexShrink: 0 }}>Enter ↵</span>
             )}
           </button>
         ))}

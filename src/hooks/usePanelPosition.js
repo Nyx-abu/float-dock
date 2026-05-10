@@ -9,11 +9,13 @@ export const PANEL_BASE_STYLE = {
   height: 480,
   maxHeight: '80vh',
   borderRadius: 16,
-  background: 'rgba(22, 24, 32, 0.95)',
-  border: '1px solid rgba(255, 255, 255, 0.07)',
+  background: 'var(--panel-bg)',
+  backdropFilter: 'blur(16px) saturate(1.2)',
+  WebkitBackdropFilter: 'blur(16px) saturate(1.2)',
+  border: '1px solid var(--surface-border)',
   boxShadow: '0 16px 48px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.2)',
   padding: '14px 14px 12px',
-  color: 'white',
+  color: 'var(--text)',
   display: 'flex',
   flexDirection: 'column',
   gap: 10,
@@ -35,24 +37,24 @@ export const HEADER_STYLE = {
 
 export const TITLE_STYLE = {
   fontSize: 14, fontWeight: 600, flex: 1, letterSpacing: '-0.01em',
-  color: '#fff',
+  color: 'var(--text)',
 };
 
 export const CLOSE_BTN = {
-  background: 'rgba(255, 255, 255, 0.06)',
-  border: '1px solid rgba(255, 255, 255, 0.06)',
+  background: 'var(--surface)',
+  border: '1px solid var(--surface-border)',
   cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   borderRadius: 7, padding: '4px', flexShrink: 0,
-  color: 'rgba(255,255,255,0.35)', fontSize: 13, lineHeight: 1,
+  color: 'var(--text-muted)', fontSize: 13, lineHeight: 1,
   transition: 'all 0.15s ease', WebkitAppRegion: 'no-drag',
   width: 24, height: 24,
 };
 
 export const INPUT_STYLE = {
-  background: 'rgba(255, 255, 255, 0.05)',
-  border: '1px solid rgba(255, 255, 255, 0.08)',
-  borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 12,
+  background: 'var(--surface)',
+  border: '1px solid var(--surface-border)',
+  borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 12,
   outline: 'none', width: '100%', boxSizing: 'border-box',
   WebkitAppRegion: 'no-drag',
   transition: 'border-color 0.15s ease',
@@ -62,7 +64,7 @@ export const INPUT_STYLE = {
 export const SCROLL_AREA = {
   flex: 1, overflowY: 'auto', minHeight: 0,
   display: 'flex', flexDirection: 'column', gap: 4,
-  scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent',
+  scrollbarWidth: 'thin', scrollbarColor: 'var(--scrollbar-thumb) transparent',
   WebkitAppRegion: 'no-drag',
 };
 

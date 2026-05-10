@@ -150,7 +150,7 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: isRecording
             ? '0 0 0 8px rgba(255,68,68,0.15), 0 0 30px rgba(255,68,68,0.3)'
-            : '0 0 0 4px rgba(110,125,255,0.15)',
+            : '0 0 0 4px rgba(var(--accent-rgb),0.15)',
           transition: 'all 0.3s ease',
           animation: isRecording ? 'voicePulse 1.5s ease-in-out infinite' : 'none',
           WebkitAppRegion: 'no-drag',
@@ -175,7 +175,7 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
             Listening... (Click to Stop)
           </span>
         ) : isTranscribing ? (
-          <span style={{ color: '#4ac1ff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <span style={{ color: 'var(--accent-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <span style={{ width: 12, height: 12, border: '2px solid #4ac1ff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
             Transcribing...
           </span>
@@ -210,9 +210,9 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
       <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
         <button onClick={handleCopy} disabled={!transcript} style={{
           flex: 1, padding: '8px 0', borderRadius: 8,
-          background: copied ? 'rgba(74,193,255,0.15)' : 'rgba(110,125,255,0.15)',
-          border: `1px solid ${copied ? 'rgba(74,193,255,0.3)' : 'rgba(110,125,255,0.25)'}`,
-          color: copied ? '#4ac1ff' : transcript ? '#9aa5ff' : 'rgba(255,255,255,0.2)',
+          background: copied ? 'rgba(var(--accent-secondary-rgb),0.15)' : 'rgba(var(--accent-rgb),0.15)',
+          border: `1px solid ${copied ? 'rgba(var(--accent-secondary-rgb),0.3)' : 'rgba(var(--accent-rgb),0.25)'}`,
+          color: copied ? 'var(--accent-secondary)' : transcript ? 'var(--accent-light)' : 'rgba(255,255,255,0.2)',
           fontSize: 12, fontWeight: 600, cursor: transcript ? 'pointer' : 'default',
           transition: 'all 0.2s', WebkitAppRegion: 'no-drag',
         }}>{copied ? '✓ Copied!' : 'Copy to Clipboard'}</button>

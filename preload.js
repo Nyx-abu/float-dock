@@ -87,6 +87,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('terminal:onData', handler);
     return () => ipcRenderer.removeListener('terminal:onData', handler);
   },
+  onSettingsChanged: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on('settings:changed', handler);
+    return () => ipcRenderer.removeListener('settings:changed', handler);
+  },
   clipboard: {
     copy: (text) => ipcRenderer.invoke('clipboard:copy', text),
   },

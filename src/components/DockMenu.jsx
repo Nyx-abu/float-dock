@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import SnapsIcon from './SnapsIcon';
 import WorkspacePanel from './WorkspacePanel';
 import ClipboardPanel from './ClipboardPanel';
@@ -122,19 +122,54 @@ function SettingsIcon() {
 export default function DockMenu({ onAction, activePanel }) {
   const [hoveredId, setHoveredId] = useState(null);
   const [snapsReady] = useState(false);
-  const [openPanel, setOpenPanel] = useState(null); // unified panel state
+  const [openPanel, setOpenPanel] = useState(null);
   const [anchorRect, setAnchorRect] = useState(null);
   const api = window.electronAPI;
   const dockRef = useRef(null);
 
+  // Helper: hex → r, g, b string for CSS rgba()
+  const hexToRgb = (hex) => {
+    const c = hex.replace('#', '');
+    const full = c.length === 3 ? c.split('').map(ch => ch + ch).join('') : c;
+    const num = parseInt(full, 16);
+    return `${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}`;
+  };
+
+  // Apply ALL settings as CSS variables — zero React re-renders
+  const applyCSSVars = React.useCallback((s) => {
+    const root = document.documentElement;
+    const accent = s.accentColor || '#6e7dff';
+    const rgb = hexToRgb(accent);
+    const r = parseInt(rgb.split(',')[0]), g = parseInt(rgb.split(',')[1]), b = parseInt(rgb.split(',')[2]);
+
+    root.style.setProperty('--accent', accent);
+    root.style.setProperty('--accent-rgb', rgb);
+    root.style.setProperty('--accent-light', `rgb(${Math.min(255, r + 50)}, ${Math.min(255, g + 40)}, ${Math.min(255, b + 30)})`);
+    root.style.setProperty('--dock-opacity', (s.dockOpacity ?? 90) / 100);
+    root.style.setProperty('--dock-scale', (s.dockScale ?? 100) / 100);
+    root.style.setProperty('--panel-opacity', (s.dockOpacity ?? 90) / 100);
+
+    if (s.theme === 'light') document.body.classList.add('light-mode');
+    else document.body.classList.remove('light-mode');
+  }, []);
+
+  // Load on mount
+  React.useEffect(() => {
+    api?.invoke?.('settings:get')?.then(s => { if (s) applyCSSVars(s); })?.catch(() => {});
+  }, [api, applyCSSVars]);
+
+  // Listen for main process settings push (startup)
+  React.useEffect(() => {
+    if (!api?.onSettingsChanged) return;
+    return api.onSettingsChanged((s) => { if (s) applyCSSVars(s); });
+  }, [api, applyCSSVars]);
+
   const handleClick = (item, e) => {
     if (PANEL_IDS.has(item.id)) {
       if (openPanel === item.id) {
-        // Toggle off
         setOpenPanel(null);
         if (api?.invoke) api.invoke('dock:setExpanded', { expanded: false });
       } else {
-        // Open this panel
         const rect = e.currentTarget.getBoundingClientRect();
         setAnchorRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom, right: rect.right });
         setOpenPanel(item.id);

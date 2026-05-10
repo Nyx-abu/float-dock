@@ -11,7 +11,7 @@
   }
   100% {
     transform: scale(1) translateY(0);
-    opacity: 1;
+    opacity: var(--panel-opacity, 0.9);
   }
 }
 
@@ -77,12 +77,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--scrollbar-thumb);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--scrollbar-hover);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -130,7 +130,7 @@
 }
 
 .notes-editor blockquote {
-  border-left: 3px solid rgba(110, 125, 255, 0.45);
+  border-left: 3px solid rgba(var(--accent-rgb), 0.45);
   padding-left: 12px;
   margin: 6px 0;
   color: rgba(255, 255, 255, 0.55);
@@ -180,7 +180,7 @@
 
 .notes-editor input[type="checkbox"] {
   margin-right: 6px;
-  accent-color: #6e7dff;
+  accent-color: var(--accent);
   vertical-align: middle;
   cursor: pointer;
 }

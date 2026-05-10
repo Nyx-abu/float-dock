@@ -11,3 +11,5 @@ release/
 .cursor/
 .idea/
 .vscode/
+CLAUDE.md
+GEMINI.md

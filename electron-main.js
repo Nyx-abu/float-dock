@@ -35,11 +35,23 @@ function loadEnv() {
 }
 loadEnv();
 
+// ─── Settings Defaults ────────────────────────────────────────────────────────
+const SETTINGS_DEFAULTS = {
+  dockPosition: 'bottom-center',
+  alwaysOnTop: true,
+  launchOnStartup: false,
+  clipboardMaxItems: 200,
+  clipboardPollingMs: 500,
+  dockOpacity: 90,
+  dockScale: 100,
+  accentColor: '#6e7dff',
+  theme: 'dark',
+};
+
 // ─── Clipboard History Manager ────────────────────────────────────────────────
 
 const HEX_COLOR_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
 const URL_RE = /^(https?:\/\/|ftp:\/\/|www\.)\S+/i;
-const MAX_HISTORY = 200;
 
 /**
  * Build a Windows CF_HDROP clipboard buffer.
@@ -73,6 +85,8 @@ class ClipboardHistoryManager {
     this._lastHash = null;
     this._pollInterval = null;
     this._win = null;
+    this._maxHistory = 200;
+    this._pollingMs = 500;
     this._ensureDirs();
     this._load();
   }
@@ -201,8 +215,8 @@ class ClipboardHistoryManager {
       this.history.unshift(recent);
     } else {
       this.history.unshift(item);
-      if (this.history.length > MAX_HISTORY) {
-        const removed = this.history.splice(MAX_HISTORY);
+      if (this.history.length > this._maxHistory) {
+        const removed = this.history.splice(this._maxHistory);
         // Clean up orphaned image files
         for (const old of removed) {
           if (old.type === 'image' && old.content && fs.existsSync(old.content)) {
@@ -238,7 +252,7 @@ class ClipboardHistoryManager {
         if (text) this._lastHash = this._hash(text);
       }
     } catch (_) { }
-    this._pollInterval = setInterval(() => this._poll(), 500);
+    this._pollInterval = setInterval(() => this._poll(), this._pollingMs);
   }
 
   stop() {
@@ -361,21 +375,41 @@ function getSnapshotManager() {
   return snapshotManager;
 }
 
+/**
+ * Calculate the dock bar position (x, y) from a named position string.
+ */
+function getDockPosition(posName, screenWidth, screenHeight, dockWidth = 480, dockHeight = 140) {
+  const margin = 10;
+  switch (posName) {
+    case 'bottom-left':
+      return { x: margin, y: screenHeight - dockHeight - margin };
+    case 'bottom-right':
+      return { x: screenWidth - dockWidth - margin, y: screenHeight - dockHeight - margin };
+    case 'top-center':
+      return { x: Math.round(screenWidth / 2 - dockWidth / 2), y: margin };
+    case 'bottom-center':
+    default:
+      return { x: Math.round(screenWidth / 2 - dockWidth / 2), y: screenHeight - dockHeight - margin };
+  }
+}
+
 function createWindow() {
   const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+
+  // Load saved settings to apply on startup
+  const savedSettings = { ...SETTINGS_DEFAULTS, ...readSettings() };
+  const { x: startX, y: startY } = getDockPosition(savedSettings.dockPosition, screenWidth, screenHeight);
 
   mainWindow = new BrowserWindow({
     width: 480,
     height: 140,
-    // Default: horizontally centered, slightly above the bottom taskbar
-    x: Math.round(screenWidth / 2 - 240),
-    y: screenHeight - 150,
-    // important for clean overlay on Windows
+    x: startX,
+    y: startY,
     frame: false,
     transparent: true,
     hasShadow: false,
     backgroundColor: '#00000000',
-    alwaysOnTop: true,
+    alwaysOnTop: savedSettings.alwaysOnTop !== false,
     resizable: false,
     skipTaskbar: true,
     webPreferences: {
@@ -396,7 +430,7 @@ function createWindow() {
     console.error('[Main] Failed to load:', errorCode, errorDescription);
   });
   mainWindow.webContents.on('console-message', (_e, level, message, line, sourceId) => {
-    if (level >= 2) { // warnings and errors
+    if (level >= 2) {
       console.warn(`[Renderer] ${message} (${sourceId}:${line})`);
     }
   });
@@ -406,6 +440,8 @@ function createWindow() {
     console.log('[Main] did-finish-load fired — showing window');
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.show();
+      // Push saved settings to renderer on load so cosmetics apply immediately
+      mainWindow.webContents.send('settings:changed', savedSettings);
     }
   });
 
@@ -425,8 +461,16 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
   }
 
-  // Start clipboard history monitoring
-  getClipboardHistory().start(mainWindow);
+  // Apply saved clipboard settings
+  const cbManager = getClipboardHistory();
+  cbManager._maxHistory = savedSettings.clipboardMaxItems || 200;
+  cbManager._pollingMs = savedSettings.clipboardPollingMs || 500;
+  cbManager.start(mainWindow);
+
+  // Apply launch on startup
+  if (typeof savedSettings.launchOnStartup === 'boolean') {
+    app.setLoginItemSettings({ openAtLogin: savedSettings.launchOnStartup });
+  }
 
   if (isDevelopment) {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
@@ -781,16 +825,55 @@ function readSettings() {
   try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch { return {}; }
 }
 
-ipcMain.handle('settings:get', () => readSettings());
+ipcMain.handle('settings:get', () => ({ ...SETTINGS_DEFAULTS, ...readSettings() }));
 ipcMain.handle('settings:set', (_e, { settings }) => {
-  fs.writeFileSync(settingsFile(), JSON.stringify(settings, null, 2), 'utf8');
-  // Apply relevant settings
+  const prev = readSettings();
+  const merged = { ...SETTINGS_DEFAULTS, ...settings };
+  fs.writeFileSync(settingsFile(), JSON.stringify(merged, null, 2), 'utf8');
+
   if (mainWindow && !mainWindow.isDestroyed()) {
-    if (typeof settings.alwaysOnTop === 'boolean') mainWindow.setAlwaysOnTop(settings.alwaysOnTop);
+    // Always on top — ONLY when value actually changes to avoid z-order flicker
+    if (typeof merged.alwaysOnTop === 'boolean' && merged.alwaysOnTop !== mainWindow.isAlwaysOnTop()) {
+      mainWindow.setAlwaysOnTop(merged.alwaysOnTop);
+    }
+
+    // Dock position — only reposition when position value actually changed
+    if (!isDockExpanded && merged.dockPosition !== prev.dockPosition) {
+      const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
+      const bounds = mainWindow.getBounds();
+      const { x, y } = getDockPosition(merged.dockPosition, sw, sh, bounds.width, bounds.height);
+      mainWindow.setBounds({ ...bounds, x, y });
+    }
   }
-  if (typeof settings.launchOnStartup === 'boolean') {
-    app.setLoginItemSettings({ openAtLogin: settings.launchOnStartup });
+
+  // Launch on startup — only when value changes
+  if (typeof merged.launchOnStartup === 'boolean' && merged.launchOnStartup !== prev.launchOnStartup) {
+    app.setLoginItemSettings({ openAtLogin: merged.launchOnStartup });
   }
+
+  // Clipboard max items
+  if (clipboardHistory) {
+    clipboardHistory._maxHistory = merged.clipboardMaxItems || 200;
+    if (clipboardHistory.history.length > clipboardHistory._maxHistory) {
+      const removed = clipboardHistory.history.splice(clipboardHistory._maxHistory);
+      for (const old of removed) {
+        if (old.type === 'image' && old.content && fs.existsSync(old.content)) {
+          fs.unlink(old.content, () => {});
+        }
+      }
+      clipboardHistory._save();
+    }
+  }
+
+  // Clipboard polling rate — restart interval if changed
+  if (clipboardHistory && merged.clipboardPollingMs && merged.clipboardPollingMs !== clipboardHistory._pollingMs) {
+    clipboardHistory._pollingMs = merged.clipboardPollingMs;
+    if (clipboardHistory._pollInterval) {
+      clearInterval(clipboardHistory._pollInterval);
+      clipboardHistory._pollInterval = setInterval(() => clipboardHistory._poll(), clipboardHistory._pollingMs);
+    }
+  }
+
   return { ok: true };
 });
 

@@ -117,8 +117,8 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
               WebkitAppRegion: 'no-drag',
             }} />
           <button type="submit" style={{
-            background: 'rgba(110,125,255,0.15)', border: '1px solid rgba(110,125,255,0.25)',
-            borderRadius: '0 6px 6px 0', color: '#9aa5ff', fontSize: 11, padding: '0 10px',
+            background: 'rgba(var(--accent-rgb),0.15)', border: '1px solid rgba(var(--accent-rgb),0.25)',
+            borderRadius: '0 6px 6px 0', color: 'var(--accent-light)', fontSize: 11, padding: '0 10px',
             cursor: 'pointer', fontWeight: 600, WebkitAppRegion: 'no-drag',
           }}>Go</button>
         </form>

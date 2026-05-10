@@ -67,9 +67,9 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
 
   const btnStyle = (active) => ({
     flex: 1, padding: '10px 0', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 11,
-    background: active ? 'rgba(74,193,255,0.15)' : 'rgba(255,255,255,0.06)',
-    border: `1px solid ${active ? 'rgba(74,193,255,0.25)' : 'rgba(255,255,255,0.1)'}`,
-    color: active ? '#4ac1ff' : 'rgba(255,255,255,0.6)',
+    background: active ? 'rgba(var(--accent-secondary-rgb),0.15)' : 'rgba(255,255,255,0.06)',
+    border: `1px solid ${active ? 'rgba(var(--accent-secondary-rgb),0.25)' : 'rgba(255,255,255,0.1)'}`,
+    color: active ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.6)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
     WebkitAppRegion: 'no-drag', transition: 'all 0.2s',
   });
@@ -107,7 +107,7 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
           </div>
 
           {capturing && (
-            <div style={{ textAlign: 'center', padding: 8, fontSize: 12, color: '#4ac1ff' }}>
+            <div style={{ textAlign: 'center', padding: 8, fontSize: 12, color: 'var(--accent-secondary)' }}>
               Capturing...
             </div>
           )}
@@ -156,7 +156,7 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
                   cursor: 'pointer', WebkitAppRegion: 'no-drag',
                   display: 'flex', flexDirection: 'column',
                 }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = '#4ac1ff'}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-secondary)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
               >
                 <img src={src.preview} alt={src.name} style={{ width: '100%', height: 80, objectFit: 'contain', background: '#000' }} />
@@ -222,11 +222,11 @@ function ScreenshotCard({ ss, copied, onCopy, onDelete, onOpen, onPreview }) {
           <>
             <button onClick={e => { e.stopPropagation(); onOpen(); }} title="Open in Explorer"
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: 11, padding: 2, WebkitAppRegion: 'no-drag' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#4ac1ff'}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-secondary)'}
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
             >📂</button>
             <button onClick={e => { e.stopPropagation(); onCopy(); }} title="Copy"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#4ac1ff' : 'rgba(255,255,255,0.4)', fontSize: 11, padding: 2, WebkitAppRegion: 'no-drag' }}>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.4)', fontSize: 11, padding: 2, WebkitAppRegion: 'no-drag' }}>
               {copied ? '✓' : '📋'}
             </button>
             <button onClick={e => { e.stopPropagation(); onDelete(); }} title="Delete"

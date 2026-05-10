@@ -151,9 +151,6 @@ export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
       defaultHeight={480}
       minWidth={300}
       minHeight={250}
-      style={{
-        background: 'radial-gradient(circle at top left, #1c1e26, #151820)',
-      }}
     >
       <div style={HEADER_STYLE}>
         <span style={TITLE_STYLE}>🖥️ Terminal</span>

@@ -117,14 +117,14 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, flexShrink: 0 }}>
           {QUICK_ACTIONS.map(a => (
             <button key={a.label} onClick={() => handleQuickAction(a)} style={{
-              background: 'rgba(110,125,255,0.06)',
-              border: '1px solid rgba(110,125,255,0.12)',
-              borderRadius: 20, color: '#9aa5ff', fontSize: 10.5, padding: '6px 12px',
+              background: 'rgba(var(--accent-rgb),0.06)',
+              border: '1px solid rgba(var(--accent-rgb),0.12)',
+              borderRadius: 20, color: 'var(--accent-light)', fontSize: 10.5, padding: '6px 12px',
               cursor: 'pointer', whiteSpace: 'nowrap', WebkitAppRegion: 'no-drag',
               fontWeight: 500, transition: 'all 0.2s', fontFamily: 'inherit',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(110,125,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(110,125,255,0.25)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(110,125,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(110,125,255,0.12)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--accent-rgb),0.12)'; e.currentTarget.style.borderColor = 'rgba(var(--accent-rgb),0.25)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(var(--accent-rgb),0.06)'; e.currentTarget.style.borderColor = 'rgba(var(--accent-rgb),0.12)'; }}
             >{a.label}</button>
           ))}
         </div>
@@ -137,7 +137,7 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
       }}>
         {messages.length === 0 && !loading && (
           <div style={{ textAlign: 'center', padding: 40, animation: 'fadeInUp 0.4s ease' }}>
-            <div style={{ fontSize: 36, marginBottom: 12, filter: 'drop-shadow(0 0 12px rgba(110,125,255,0.3))' }}>✨</div>
+            <div style={{ fontSize: 36, marginBottom: 12, filter: 'drop-shadow(0 0 12px rgba(var(--accent-rgb),0.3))' }}>✨</div>
             <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, lineHeight: 1.6 }}>
               Ask me anything or use a quick action above.
             </p>
@@ -148,13 +148,13 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
             alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
             maxWidth: '85%', padding: '10px 14px', borderRadius: 14,
             background: msg.role === 'user'
-              ? 'linear-gradient(135deg, rgba(110,125,255,0.2), rgba(74,193,255,0.1))'
+              ? 'linear-gradient(135deg, rgba(var(--accent-rgb),0.2), rgba(var(--accent-secondary-rgb),0.1))'
               : msg.error ? 'rgba(255,107,107,0.08)' : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${msg.role === 'user' ? 'rgba(110,125,255,0.15)' : msg.error ? 'rgba(255,107,107,0.15)' : 'rgba(255,255,255,0.06)'}`,
+            border: `1px solid ${msg.role === 'user' ? 'rgba(var(--accent-rgb),0.15)' : msg.error ? 'rgba(255,107,107,0.15)' : 'rgba(255,255,255,0.06)'}`,
             fontSize: 12, lineHeight: 1.7, color: msg.error ? '#ff8787' : 'rgba(255,255,255,0.85)',
             whiteSpace: 'pre-wrap', wordBreak: 'break-word',
             animation: 'fadeInUp 0.25s ease',
-            boxShadow: msg.role === 'user' ? '0 4px 16px rgba(110,125,255,0.08)' : 'none',
+            boxShadow: msg.role === 'user' ? '0 4px 16px rgba(var(--accent-rgb),0.08)' : 'none',
           }}>{msg.text}</div>
         ))}
         {loading && (
@@ -178,16 +178,16 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
             transition: 'border-color 0.2s', lineHeight: 1.5,
             maxHeight: 100, minHeight: 38,
           }}
-          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(110,125,255,0.3)'; }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'rgba(var(--accent-rgb),0.3)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
         />
         <button onClick={() => sendMessage()} disabled={loading || !input.trim()} style={{
           padding: '10px 16px', borderRadius: 10,
           background: input.trim() && !loading
-            ? 'rgba(110,125,255,0.2)'
+            ? 'rgba(var(--accent-rgb),0.2)'
             : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${input.trim() && !loading ? 'rgba(110,125,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-          color: input.trim() && !loading ? '#9aa5ff' : 'rgba(255,255,255,0.15)',
+          border: `1px solid ${input.trim() && !loading ? 'rgba(var(--accent-rgb),0.2)' : 'rgba(255,255,255,0.06)'}`,
+          color: input.trim() && !loading ? 'var(--accent-light)' : 'rgba(255,255,255,0.15)',
           fontSize: 14, cursor: input.trim() && !loading ? 'pointer' : 'default',
           WebkitAppRegion: 'no-drag', transition: 'all 0.15s',
           height: 38,

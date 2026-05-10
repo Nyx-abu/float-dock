@@ -2,6 +2,50 @@
    Float Dock — Global Styles
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── CSS Custom Properties (Theme System) ──────────────────── */
+:root {
+  /* Accent */
+  --accent: #6e7dff;
+  --accent-rgb: 110, 125, 255;
+  --accent-light: #9aa5ff;
+  --accent-secondary: #4ac1ff;
+  --accent-secondary-rgb: 74, 193, 255;
+
+  /* Surfaces */
+  --panel-bg: rgba(22, 24, 32, 0.97);
+  --dock-bg: rgba(28, 30, 38, 0.97);
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --surface-border: rgba(255, 255, 255, 0.07);
+  --surface-active: rgba(255, 255, 255, 0.12);
+
+  /* Text */
+  --text: #fff;
+  --text-dim: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.35);
+  --text-faint: rgba(255, 255, 255, 0.2);
+
+  /* Scrollbar */
+  --scrollbar-thumb: rgba(255, 255, 255, 0.08);
+  --scrollbar-hover: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Light Mode ────────────────────────────────────────────── */
+body.light-mode {
+  --panel-bg: rgba(248, 248, 246, 0.97); /* Soft off-white */
+  --dock-bg: rgba(242, 242, 240, 0.97);
+  --surface: rgba(0, 0, 0, 0.05);
+  --surface-hover: rgba(0, 0, 0, 0.09);
+  --surface-border: rgba(0, 0, 0, 0.12);
+  --surface-active: rgba(0, 0, 0, 0.14);
+  --text: #0f1115; /* High contrast dark text */
+  --text-dim: rgba(15, 17, 21, 0.75);
+  --text-muted: rgba(15, 17, 21, 0.5);
+  --text-faint: rgba(15, 17, 21, 0.2);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-hover: rgba(0, 0, 0, 0.25);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -11,7 +55,7 @@
 body {
   font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: transparent;
-  color: #fff;
+  color: var(--text);
   user-select: none;
   -webkit-app-region: drag;
   -webkit-font-smoothing: antialiased;

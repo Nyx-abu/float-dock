@@ -11,8 +11,8 @@ const TEXT_COLORS = [
   { value: '#ff6b6b', label: 'Red', css: '#ff6b6b' },
   { value: '#ffd166', label: 'Yellow', css: '#ffd166' },
   { value: '#06d6a0', label: 'Green', css: '#06d6a0' },
-  { value: '#4ac1ff', label: 'Blue', css: '#4ac1ff' },
-  { value: '#9aa5ff', label: 'Purple', css: '#9aa5ff' },
+  { value: 'var(--accent-secondary)', label: 'Blue', css: 'var(--accent-secondary)' },
+  { value: 'var(--accent-light)', label: 'Purple', css: 'var(--accent-light)' },
   { value: '#ff9ff3', label: 'Pink', css: '#ff9ff3' },
   { value: '#ffa94d', label: 'Orange', css: '#ffa94d' },
 ];
@@ -40,8 +40,8 @@ function TBtn({ onClick, active, title, children, style }) {
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
         ...TB_BASE,
-        background: active ? 'rgba(110,125,255,0.2)' : hovered ? 'rgba(255,255,255,0.08)' : 'none',
-        color: active ? '#9aa5ff' : 'rgba(255,255,255,0.55)',
+        background: active ? 'rgba(var(--accent-rgb),0.2)' : hovered ? 'rgba(255,255,255,0.08)' : 'none',
+        color: active ? 'var(--accent-light)' : 'rgba(255,255,255,0.55)',
         ...style,
       }}>{children}</button>
   );
@@ -228,9 +228,6 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
       defaultHeight={480}
       minWidth={300}
       minHeight={300}
-      style={{
-        background: 'radial-gradient(circle at top left, #1e2330, #111418)',
-      }}
     >
       {/* ── Header ── */}
       <div style={HEADER_STYLE}>
@@ -242,8 +239,8 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
         {view === 'list' && (
           <button onClick={() => { setEditNote({ id: null, title: '', body: '', pinned: false, fontSize: 13 }); setView('editor'); loadedNoteId.current = null; }}
             style={{
-              background: 'rgba(110,125,255,0.15)', border: '1px solid rgba(110,125,255,0.25)',
-              borderRadius: 6, color: '#9aa5ff', fontSize: 11, padding: '4px 10px',
+              background: 'rgba(var(--accent-rgb),0.15)', border: '1px solid rgba(var(--accent-rgb),0.25)',
+              borderRadius: 6, color: 'var(--accent-light)', fontSize: 11, padding: '4px 10px',
               cursor: 'pointer', fontWeight: 600, WebkitAppRegion: 'no-drag',
             }}>+ New</button>
         )}
@@ -405,9 +402,9 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
             <button onClick={handleSave} disabled={!editNote?.title?.trim()} style={{
               flex: 1, padding: '8px 0', borderRadius: 8,
-              background: editNote?.title?.trim() ? 'rgba(110,125,255,0.15)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${editNote?.title?.trim() ? 'rgba(110,125,255,0.25)' : 'rgba(255,255,255,0.08)'}`,
-              color: editNote?.title?.trim() ? '#9aa5ff' : 'rgba(255,255,255,0.2)',
+              background: editNote?.title?.trim() ? 'rgba(var(--accent-rgb),0.15)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${editNote?.title?.trim() ? 'rgba(var(--accent-rgb),0.25)' : 'rgba(255,255,255,0.08)'}`,
+              color: editNote?.title?.trim() ? 'var(--accent-light)' : 'rgba(255,255,255,0.2)',
               fontSize: 12, fontWeight: 600, cursor: editNote?.title?.trim() ? 'pointer' : 'default', WebkitAppRegion: 'no-drag',
             }}>Save Note</button>
             {editNote?.id && (

@@ -49,6 +49,7 @@ export default function App() {
     return unsubscribe;
   }, [api]);
 
+
   return (
     <div
       className={`dock-container ${restoreAnim ? 'layout-restore' : ''}`}

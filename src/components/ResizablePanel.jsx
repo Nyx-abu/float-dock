@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React from 'react';
+import { useRef } from 'react';
 import { Resizable } from 're-resizable';
 import { usePanelPosition, useDraggable, PANEL_BASE_STYLE } from '../hooks/usePanelPosition';
 
@@ -20,8 +21,6 @@ export default function ResizablePanel({
   // Enable free dragging via header
   useDraggable(panelRef);
 
-  // When Resizable creates the ref, it passes it to its internal div.
-  // We can attach it to panelRef so usePanelPosition can manipulate it.
   const handleRef = (c) => {
     if (c && c.resizable) {
       panelRef.current = c.resizable;
@@ -38,20 +37,16 @@ export default function ResizablePanel({
         ...PANEL_BASE_STYLE,
         display: isOpen ? 'flex' : 'none',
         flexDirection: 'column',
-        ...style
+        ...style,
       }}
       enable={{
         top: true, right: true, bottom: true, left: true,
         topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
       }}
     >
-      {/* Wrap children so that headers with data-drag-handle are detected */}
       {React.Children.map(children, (child, index) => {
-        // The first child is typically the header — mark it as the drag handle
         if (index === 0 && React.isValidElement(child)) {
-          return React.cloneElement(child, {
-            'data-drag-handle': true,
-          });
+          return React.cloneElement(child, { 'data-drag-handle': true });
         }
         return child;
       })}
