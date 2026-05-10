@@ -156,8 +156,8 @@ export default function TerminalPanel({ isOpen, onClose, anchorRect }) {
         <span style={TITLE_STYLE}>🖥️ Terminal</span>
         <button onClick={() => { if (xtermRef.current) xtermRef.current.clear(); }}
           style={{
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 6, color: 'rgba(255,255,255,0.5)', fontSize: 11, padding: '4px 8px',
+            background: 'var(--surface)', border: '1px solid var(--surface-border)',
+            borderRadius: 6, color: 'var(--text-dim)', fontSize: 11, padding: '4px 8px',
             cursor: 'pointer', WebkitAppRegion: 'no-drag',
           }}>Clear</button>
         <button onClick={onClose} style={CLOSE_BTN}

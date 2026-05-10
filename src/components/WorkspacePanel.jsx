@@ -106,7 +106,7 @@ export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
         <div
           style={{
             fontSize: 12,
-            color: 'rgba(255,255,255,0.7)',
+            color: 'var(--text-dim)',
             flex: 1,
           }}
         >
@@ -146,7 +146,7 @@ export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
           <div
             style={{
               fontSize: 13,
-              color: 'rgba(255,255,255,0.6)',
+              color: 'var(--text-muted)',
               textAlign: 'center',
               padding: 16,
             }}
@@ -163,7 +163,7 @@ export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
                 padding: '6px 8px',
                 borderRadius: 6,
                 marginBottom: 4,
-                background: 'rgba(255,255,255,0.03)',
+                background: 'var(--surface)',
                 gap: 8,
               }}
             >
@@ -179,7 +179,7 @@ export default function WorkspacePanel({ isOpen, onClose, anchorRect }) {
                 >
                   {ws.name}
                 </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                   {formatDate(ws.createdAt)}
                 </div>
               </div>

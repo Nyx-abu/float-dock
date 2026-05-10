@@ -57,7 +57,7 @@ function ColorSwatch({ hex }) {
                 border: '2px solid rgba(255,255,255,0.15)',
                 boxShadow: `0 0 10px ${safe}55`,
             }} />
-            <span style={{ fontFamily: 'monospace', fontSize: 14, color: '#fff', fontWeight: 700 }}>{safe}</span>
+            <span style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--text)', fontWeight: 700 }}>{safe}</span>
         </div>
     );
 }
@@ -67,7 +67,7 @@ function ImagePreview({ src }) {
         <img src={src} alt="Clipboard img"
             style={{
                 maxWidth: '100%', maxHeight: 72, borderRadius: 6, objectFit: 'cover',
-                border: '1px solid rgba(255,255,255,0.08)'
+                border: '1px solid var(--surface-border)'
             }} />
     );
 }
@@ -82,14 +82,14 @@ function FilePreview({ content, paths: pathsProp }) {
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontSize: 13 }}>📄</span>
                     <span style={{
-                        fontSize: 12, color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap',
+                        fontSize: 12, color: 'var(--text)', whiteSpace: 'nowrap',
                         overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 240
                     }}>
                         {f.split(/[\\/]/).pop()}
                     </span>
                 </div>
             ))}
-            {files.length > 3 && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>+{files.length - 3} more</span>}
+            {files.length > 3 && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>+{files.length - 3} more</span>}
         </div>
     );
 }
@@ -101,7 +101,7 @@ function LinkPreview({ url }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span style={{ fontSize: 11, color: '#06d6a0', fontWeight: 600 }}>{host}</span>
             <span style={{
-                fontSize: 12, color: 'rgba(255,255,255,0.55)', whiteSpace: 'nowrap',
+                fontSize: 12, color: 'var(--text-dim)', whiteSpace: 'nowrap',
                 overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 280
             }}>{url}</span>
         </div>
@@ -167,7 +167,7 @@ function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
             {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <TypeBadge type={item.type} />
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', flex: 1 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', flex: 1 }}>
                     {formatTime(item.timestamp)}
                 </span>
 
@@ -195,7 +195,7 @@ function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
                 <button
                     onClick={e => { e.stopPropagation(); onDelete(item.id); }}
                     title="Delete"
-                    style={{ ...btnBase, color: 'rgba(255,255,255,0.25)', fontSize: 13 }}
+                    style={{ ...btnBase, color: 'var(--text-faint)', fontSize: 13 }}
                     onMouseEnter={e => { e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.background = 'rgba(255,107,107,0.1)'; }}
                     onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.25)'; e.currentTarget.style.background = 'none'; }}
                 >✕</button>
@@ -209,7 +209,7 @@ function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
                 {item.type === 'link' && <LinkPreview url={item.content.trim()} />}
                 {item.type === 'text' && (
                     <p style={{
-                        margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.72)',
+                        margin: 0, fontSize: 12, color: 'var(--text-dim)',
                         whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                         display: '-webkit-box', WebkitLineClamp: 3,
                         WebkitBoxOrient: 'vertical', overflow: 'hidden',
@@ -236,8 +236,8 @@ function ImageOverlay({ src, onClose }) {
             }} />
             <button onClick={onClose} style={{
                 position: 'absolute', top: 16, right: 16,
-                background: 'rgba(255,255,255,0.1)', border: 'none',
-                color: '#fff', fontSize: 18, width: 36, height: 36,
+                background: 'var(--surface-active)', border: 'none',
+                color: 'var(--text)', fontSize: 18, width: 36, height: 36,
                 borderRadius: '50%', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>✕</button>
@@ -335,9 +335,9 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
                     value={filter}
                     onChange={e => setFilter(e.target.value)}
                     style={{
-                        background: 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        borderRadius: 6, color: 'rgba(255,255,255,0.85)',
+                        background: 'var(--surface-hover)',
+                        border: '1px solid var(--surface-border)',
+                        borderRadius: 6, color: 'var(--text)',
                         fontSize: 11, padding: '4px 8px', cursor: 'pointer',
                         outline: 'none', WebkitAppRegion: 'no-drag',
                         appearance: 'auto',
@@ -364,7 +364,7 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
             {/* ── Scrollable list ── */}
             <div style={{ ...SCROLL_AREA, flexDirection: 'column', gap: 4, paddingRight: 4 }}>
                 {loading && (
-                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, textAlign: 'center', padding: 24, margin: 0 }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', padding: 24, margin: 0 }}>
                         Loading…
                     </p>
                 )}
@@ -372,7 +372,7 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
                 {!loading && filtered.length === 0 && (
                     <div style={{ textAlign: 'center', padding: 32 }}>
                         <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
-                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, margin: 0 }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0 }}>
                             {filter === 'all' ? 'Nothing copied yet.' : `No ${filter} items in history.`}
                         </p>
                     </div>
@@ -381,7 +381,7 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
                 {!loading && groups.map(({ lbl, items: grpItems }) => (
                     <div key={lbl}>
                         <div style={{
-                            fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.22)',
+                            fontSize: 10, fontWeight: 700, color: 'var(--text-faint)',
                             textTransform: 'uppercase', letterSpacing: '0.08em',
                             padding: '8px 2px 4px',
                         }}>{lbl}</div>

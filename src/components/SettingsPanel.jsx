@@ -393,7 +393,7 @@ export default function SettingsPanel({ isOpen, onClose, anchorRect }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', WebkitAppRegion: 'no-drag' }}>
             <span style={{ flex: 1, fontSize: 12.5, fontWeight: 500, color: 'var(--text)' }}>Dock Position</span>
             <select value={settings.dockPosition} onChange={e => update('dockPosition', e.target.value)} style={selStyle}>
-              {POSITIONS.map(p => <option key={p.value} value={p.value} style={{ background: '#14161e', color: '#fff' }}>{p.label}</option>)}
+              {POSITIONS.map(p => <option key={p.value} value={p.value} style={{ background: 'var(--panel-bg)', color: 'var(--text)' }}>{p.label}</option>)}
             </select>
           </div>
           <Toggle label="Always on Top" value={settings.alwaysOnTop} onChange={v => update('alwaysOnTop', v)} accentColor={accent} />
@@ -424,7 +424,7 @@ export default function SettingsPanel({ isOpen, onClose, anchorRect }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', WebkitAppRegion: 'no-drag' }}>
             <span style={{ flex: 1, fontSize: 12.5, fontWeight: 500, color: 'var(--text)' }}>Max History Items</span>
             <select value={settings.clipboardMaxItems} onChange={e => update('clipboardMaxItems', Number(e.target.value))} style={selStyle}>
-              {[50, 100, 200, 500].map(n => <option key={n} value={n} style={{ background: '#14161e', color: '#fff' }}>{n}</option>)}
+              {[50, 100, 200, 500].map(n => <option key={n} value={n} style={{ background: 'var(--panel-bg)', color: 'var(--text)' }}>{n}</option>)}
             </select>
           </div>
           <Slider

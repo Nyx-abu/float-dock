@@ -168,7 +168,7 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
       </div>
 
       {/* Status */}
-      <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>
+      <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
         {isRecording ? (
           <span style={{ color: '#ff6666', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff4444', animation: 'voiceDot 1s ease-in-out infinite' }} />
@@ -195,12 +195,12 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
         flex: 1, overflowY: 'auto', minHeight: 0,
         background: 'rgba(0,0,0,0.2)', borderRadius: 10,
         padding: 12, fontSize: 13, lineHeight: 1.6,
-        color: 'rgba(255,255,255,0.85)',
-        scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+        color: 'var(--text)',
+        scrollbarWidth: 'thin', scrollbarColor: 'var(--scrollbar-thumb) transparent',
       }}>
         {transcript && <span>{transcript}</span>}
         {!transcript && !isTranscribing && (
-          <span style={{ color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+          <span style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>
             Your transcript will appear here...
           </span>
         )}
@@ -218,7 +218,7 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
         }}>{copied ? '✓ Copied!' : 'Copy to Clipboard'}</button>
         <button onClick={handleClear} disabled={!transcript} style={{
           padding: '8px 16px', borderRadius: 8,
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+          background: 'var(--surface)', border: '1px solid var(--surface-border)',
           color: transcript ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)',
           fontSize: 12, fontWeight: 600,
           cursor: transcript ? 'pointer' : 'default',

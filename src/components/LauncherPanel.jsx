@@ -74,25 +74,25 @@ export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
       <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={handleKeyDown}
         placeholder="Search apps, commands..."
         style={{
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 10, padding: '12px 14px', color: '#fff', fontSize: 14, fontWeight: 500,
+          background: 'var(--surface)', border: '1px solid var(--surface-border)',
+          borderRadius: 10, padding: '12px 14px', color: 'var(--text)', fontSize: 14, fontWeight: 500,
           outline: 'none', width: '100%', boxSizing: 'border-box', WebkitAppRegion: 'no-drag',
         }} />
 
       {/* Results */}
       <div style={{
         flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 2,
-        scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+        scrollbarWidth: 'thin', scrollbarColor: 'var(--scrollbar-thumb) transparent',
       }}>
         {!query && !loading && (
           <div style={{ textAlign: 'center', padding: 32 }}>
             <div style={{ fontSize: 32, marginBottom: 10 }}>⚡</div>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>Type to search for apps and commands.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>Type to search for apps and commands.</p>
           </div>
         )}
-        {loading && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, textAlign: 'center', padding: 16 }}>Searching…</p>}
+        {loading && <p style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', padding: 16 }}>Searching…</p>}
         {!loading && query && results.length === 0 && (
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, textAlign: 'center', padding: 24 }}>No results found.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', padding: 24 }}>No results found.</p>
         )}
         {results.map((item, i) => (
           <button key={item.path + i} onClick={() => launch(item)} onMouseEnter={() => setSelected(i)}
@@ -100,7 +100,7 @@ export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
               borderRadius: 8, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
               background: i === selected ? 'rgba(var(--accent-rgb),0.12)' : 'transparent',
-              color: '#fff', transition: 'background 0.1s', WebkitAppRegion: 'no-drag',
+              color: 'var(--text)', transition: 'background 0.1s', WebkitAppRegion: 'no-drag',
             }}>
             <span style={{ fontSize: 18, width: 24, textAlign: 'center', flexShrink: 0 }}>
               {typeIcons[item.type] || '📄'}
@@ -109,7 +109,7 @@ export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
               <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {item.name}
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {item.path}
               </div>
             </div>
@@ -120,7 +120,7 @@ export default function LauncherPanel({ isOpen, onClose, anchorRect }) {
         ))}
       </div>
 
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', textAlign: 'center', flexShrink: 0 }}>
+      <div style={{ fontSize: 10, color: 'var(--text-faint)', textAlign: 'center', flexShrink: 0 }}>
         ↑↓ Navigate · Enter to launch · Esc to close
       </div>
     </ResizablePanel>

@@ -48,7 +48,7 @@ function TBtn({ onClick, active, title, children, style }) {
 }
 
 function Divider() {
-  return <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)', margin: '0 2px', flexShrink: 0 }} />;
+  return <div style={{ width: 1, height: 16, background: 'var(--surface-active)', margin: '0 2px', flexShrink: 0 }} />;
 }
 
 // ─── Note Card (List View) ───────────────────────────────────────────────────
@@ -64,22 +64,22 @@ function NoteCard({ note, onClick, onPin, onDelete }) {
       style={{
         padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
         background: hovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.06)', transition: 'background 0.15s', WebkitAppRegion: 'no-drag',
+        border: '1px solid var(--surface-border)', transition: 'background 0.15s', WebkitAppRegion: 'no-drag',
       }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         {note.pinned && <span style={{ fontSize: 10 }}>📌</span>}
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {note.title || 'Untitled'}
         </span>
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{time}</span>
+        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{time}</span>
         <button onClick={e => { e.stopPropagation(); onPin(); }} title={note.pinned ? 'Unpin' : 'Pin'}
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: note.pinned ? '#ffd166' : 'rgba(255,255,255,0.2)', fontSize: 12, WebkitAppRegion: 'no-drag' }}>📌</button>
         <button onClick={e => { e.stopPropagation(); onDelete(); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'rgba(255,255,255,0.25)', fontSize: 12, WebkitAppRegion: 'no-drag' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-faint)', fontSize: 12, WebkitAppRegion: 'no-drag' }}
           onMouseEnter={e => e.currentTarget.style.color = '#ff6b6b'}
           onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}>✕</button>
       </div>
-      <p style={{ margin: '4px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preview}</p>
+      <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preview}</p>
     </div>
   );
 }
@@ -233,7 +233,7 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
       <div style={HEADER_STYLE}>
         {view === 'editor' && (
           <button onClick={() => { setView('list'); setEditNote(null); setShowColors(false); loadedNoteId.current = null; }}
-            style={{ ...CLOSE_BTN, color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>←</button>
+            style={{ ...CLOSE_BTN, color: 'var(--text-dim)', fontSize: 14 }}>←</button>
         )}
         <span style={TITLE_STYLE}>{view === 'editor' ? (editNote?.id ? 'Edit Note' : 'New Note') : '📝 Quick Notes'}</span>
         {view === 'list' && (
@@ -254,11 +254,11 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
         <>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..." style={INPUT_STYLE} />
           <div style={SCROLL_AREA}>
-            {loading && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, textAlign: 'center', padding: 24 }}>Loading…</p>}
+            {loading && <p style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', padding: 24 }}>Loading…</p>}
             {!loading && sorted.length === 0 && (
               <div style={{ textAlign: 'center', padding: 32 }}>
                 <div style={{ fontSize: 32, marginBottom: 10 }}>📝</div>
-                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>{search ? 'No matching notes.' : 'No notes yet. Click + New to create one.'}</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>{search ? 'No matching notes.' : 'No notes yet. Click + New to create one.'}</p>
               </div>
             )}
             {!loading && sorted.map(note => (
@@ -279,7 +279,7 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
           {/* ── Formatting Toolbar ── */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0,
-            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--surface)', border: '1px solid var(--surface-border)',
             borderRadius: 8, padding: '3px 6px', flexWrap: 'wrap', WebkitAppRegion: 'no-drag',
           }}>
             {/* Text styling */}
@@ -389,11 +389,11 @@ export default function NotesPanel({ isOpen, onClose, anchorRect }) {
             onKeyDown={handleEditorKeyDown}
             style={{
               flex: 1, overflowY: 'auto', minHeight: 0,
-              background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(0,0,0,0.2)', border: '1px solid var(--surface-border)',
               borderRadius: 10, padding: 12,
-              color: 'rgba(255,255,255,0.85)', fontSize: fontSize, lineHeight: 1.65,
+              color: 'var(--text)', fontSize: fontSize, lineHeight: 1.65,
               fontFamily: 'inherit',
-              scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+              scrollbarWidth: 'thin', scrollbarColor: 'var(--scrollbar-thumb) transparent',
               WebkitAppRegion: 'no-drag',
             }}
           />

@@ -97,8 +97,8 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
         <span style={TITLE_STYLE}>✨ AI Assistant</span>
         {messages.length > 0 && (
           <button onClick={() => setMessages([])} style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 7, color: 'rgba(255,255,255,0.4)', fontSize: 10.5, padding: '4px 10px',
+            background: 'var(--surface)', border: '1px solid var(--surface-border)',
+            borderRadius: 7, color: 'var(--text-muted)', fontSize: 10.5, padding: '4px 10px',
             cursor: 'pointer', WebkitAppRegion: 'no-drag', fontWeight: 500,
             transition: 'all 0.15s',
             fontFamily: 'inherit',
@@ -138,7 +138,7 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
         {messages.length === 0 && !loading && (
           <div style={{ textAlign: 'center', padding: 40, animation: 'fadeInUp 0.4s ease' }}>
             <div style={{ fontSize: 36, marginBottom: 12, filter: 'drop-shadow(0 0 12px rgba(var(--accent-rgb),0.3))' }}>✨</div>
-            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, lineHeight: 1.6 }}>
+            <p style={{ color: 'var(--text-faint)', fontSize: 12, lineHeight: 1.6 }}>
               Ask me anything or use a quick action above.
             </p>
           </div>
@@ -160,7 +160,7 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
         {loading && (
           <div style={{
             alignSelf: 'flex-start', padding: '10px 14px', borderRadius: 14,
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--surface)', border: '1px solid var(--surface-border)',
           }}><TypingIndicator /></div>
         )}
       </div>
@@ -172,8 +172,8 @@ export default function AiPanel({ isOpen, onClose, anchorRect }) {
           placeholder="Ask anything…" disabled={loading}
           rows={Math.min(4, Math.max(1, input.split('\n').length))}
           style={{
-            flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 12, padding: '10px 14px', color: '#fff', fontSize: 12, outline: 'none',
+            flex: 1, background: 'var(--surface)', border: '1px solid var(--surface-border)',
+            borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 12, outline: 'none',
             WebkitAppRegion: 'no-drag', fontFamily: 'inherit', resize: 'none',
             transition: 'border-color 0.2s', lineHeight: 1.5,
             maxHeight: 100, minHeight: 38,

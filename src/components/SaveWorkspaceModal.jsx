@@ -76,11 +76,11 @@ export default function SaveWorkspaceModal({ isOpen, initialName = '', onSave, o
           width: 340,
           maxWidth: '90vw',
           borderRadius: 14,
-          background: 'radial-gradient(circle at top left, #202733, #12141a)',
-          border: '1px solid rgba(255,255,255,0.12)',
+          background: 'var(--panel-bg)',
+          border: '1px solid var(--surface-border)',
           boxShadow: 'none',
           padding: 16,
-          color: 'white',
+          color: 'var(--text)',
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
@@ -101,7 +101,7 @@ export default function SaveWorkspaceModal({ isOpen, initialName = '', onSave, o
             style={{
               border: 'none',
               background: 'transparent',
-              color: 'rgba(255,255,255,0.65)',
+              color: 'var(--text-muted)',
               cursor: 'pointer',
               fontSize: 18,
             }}
@@ -114,7 +114,7 @@ export default function SaveWorkspaceModal({ isOpen, initialName = '', onSave, o
         <label
           style={{
             fontSize: 12,
-            color: 'rgba(255,255,255,0.7)',
+            color: 'var(--text-dim)',
             marginBottom: 2,
           }}
         >
@@ -130,9 +130,9 @@ export default function SaveWorkspaceModal({ isOpen, initialName = '', onSave, o
             width: '100%',
             padding: '7px 9px',
             borderRadius: 8,
-            border: '1px solid rgba(255,255,255,0.2)',
-            background: 'rgba(0,0,0,0.45)',
-            color: 'white',
+            border: '1px solid var(--surface-border)',
+            background: 'var(--surface)',
+            color: 'var(--text)',
             fontSize: 13,
             outline: 'none',
           }}
@@ -153,8 +153,8 @@ export default function SaveWorkspaceModal({ isOpen, initialName = '', onSave, o
               padding: '6px 10px',
               borderRadius: 999,
               border: 'none',
-              background: 'rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.8)',
+              background: 'var(--surface)',
+              color: 'var(--text)',
               fontSize: 12,
               cursor: 'pointer',
             }}

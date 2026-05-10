@@ -32,8 +32,8 @@
 
 /* ── Light Mode ────────────────────────────────────────────── */
 body.light-mode {
-  --panel-bg: rgba(248, 248, 246, 0.97); /* Soft off-white */
-  --dock-bg: rgba(242, 242, 240, 0.97);
+  --panel-bg: rgba(238, 238, 236, 0.97); /* More off-white */
+  --dock-bg: rgba(230, 230, 228, 0.97);
   --surface: rgba(0, 0, 0, 0.05);
   --surface-hover: rgba(0, 0, 0, 0.09);
   --surface-border: rgba(0, 0, 0, 0.12);

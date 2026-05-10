@@ -86,7 +86,7 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
       <div style={HEADER_STYLE}>
         {selectingWindow && (
           <button onClick={() => setSelectingWindow(false)}
-            style={{ ...CLOSE_BTN, color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>←</button>
+            style={{ ...CLOSE_BTN, color: 'var(--text-dim)', fontSize: 14 }}>←</button>
         )}
         <span style={TITLE_STYLE}>{selectingWindow ? 'Select Window' : '📷 Screenshots'}</span>
         <button onClick={onClose} style={CLOSE_BTN}
@@ -117,12 +117,12 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
             flex: 1, overflowY: 'auto', minHeight: 0,
             display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8,
             alignContent: 'start', padding: 2,
-            scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+            scrollbarWidth: 'thin', scrollbarColor: 'var(--scrollbar-thumb) transparent',
           }}>
             {screenshots.length === 0 && !capturing && (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 32 }}>
                 <div style={{ fontSize: 32, marginBottom: 10 }}>📷</div>
-                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, margin: 0 }}>No screenshots yet. Click a button above to capture.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0 }}>No screenshots yet. Click a button above to capture.</p>
               </div>
             )}
             {screenshots.map(ss => (
@@ -141,10 +141,10 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
           flex: 1, overflowY: 'auto', minHeight: 0,
           display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8,
           alignContent: 'start', padding: 2,
-          scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent',
+          scrollbarWidth: 'thin', scrollbarColor: 'var(--scrollbar-thumb) transparent',
         }}>
           {windowSources.length === 0 ? (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 32, color: 'rgba(255,255,255,0.5)' }}>
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 32, color: 'var(--text-dim)' }}>
               Loading windows...
             </div>
           ) : (
@@ -152,7 +152,7 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
               <div key={src.id} onClick={() => capture('window', src.id)}
                 style={{
                   borderRadius: 8, overflow: 'hidden',
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'var(--surface)', border: '1px solid var(--surface-border)',
                   cursor: 'pointer', WebkitAppRegion: 'no-drag',
                   display: 'flex', flexDirection: 'column',
                 }}
@@ -160,7 +160,7 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
               >
                 <img src={src.preview} alt={src.name} style={{ width: '100%', height: 80, objectFit: 'contain', background: '#000' }} />
-                <div style={{ padding: '4px 6px', fontSize: 10, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                <div style={{ padding: '4px 6px', fontSize: 10, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>
                   {src.name}
                 </div>
               </div>
@@ -189,8 +189,8 @@ export default function ScreenshotPanel({ isOpen, onClose, anchorRect }) {
           }} />
           <button onClick={() => setPreviewImage(null)} style={{
             position: 'absolute', top: 16, right: 16,
-            background: 'rgba(255,255,255,0.1)', border: 'none',
-            color: '#fff', fontSize: 18, width: 36, height: 36,
+            background: 'var(--surface-active)', border: 'none',
+            color: 'var(--text)', fontSize: 18, width: 36, height: 36,
             borderRadius: '50%', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>✕</button>
@@ -209,7 +209,7 @@ function ScreenshotCard({ ss, copied, onCopy, onDelete, onOpen, onPreview }) {
     <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
         borderRadius: 8, overflow: 'hidden', position: 'relative',
-        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--surface)', border: '1px solid var(--surface-border)',
         cursor: 'pointer', WebkitAppRegion: 'no-drag',
         transition: 'border-color 0.15s',
         borderColor: hovered ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
@@ -217,11 +217,11 @@ function ScreenshotCard({ ss, copied, onCopy, onDelete, onOpen, onPreview }) {
       <img src={ss.preview} alt="screenshot" onClick={onPreview}
         style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
       <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', flex: 1 }}>{time}</span>
+        <span style={{ fontSize: 10, color: 'var(--text-muted)', flex: 1 }}>{time}</span>
         {hovered && (
           <>
             <button onClick={e => { e.stopPropagation(); onOpen(); }} title="Open in Explorer"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', fontSize: 11, padding: 2, WebkitAppRegion: 'no-drag' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11, padding: 2, WebkitAppRegion: 'no-drag' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-secondary)'}
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
             >📂</button>
@@ -230,7 +230,7 @@ function ScreenshotCard({ ss, copied, onCopy, onDelete, onOpen, onPreview }) {
               {copied ? '✓' : '📋'}
             </button>
             <button onClick={e => { e.stopPropagation(); onDelete(); }} title="Delete"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: 11, padding: 2, WebkitAppRegion: 'no-drag' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11, padding: 2, WebkitAppRegion: 'no-drag' }}
               onMouseEnter={e => e.currentTarget.style.color = '#ff6b6b'}
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}>✕</button>
           </>

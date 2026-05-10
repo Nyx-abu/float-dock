@@ -83,7 +83,7 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
 
   const navBtn = {
     background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px',
-    color: 'rgba(255,255,255,0.5)', fontSize: 14, borderRadius: 4,
+    color: 'var(--text-dim)', fontSize: 14, borderRadius: 4,
     WebkitAppRegion: 'no-drag', display: 'flex', alignItems: 'center',
   };
 
@@ -112,8 +112,8 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
           <input ref={inputRef} value={url} onChange={e => setUrl(e.target.value)}
             placeholder="Enter URL or search..."
             style={{
-              flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px 0 0 6px', padding: '7px 10px', color: '#fff', fontSize: 11, outline: 'none',
+              flex: 1, background: 'var(--surface)', border: '1px solid var(--surface-border)',
+              borderRadius: '6px 0 0 6px', padding: '7px 10px', color: 'var(--text)', fontSize: 11, outline: 'none',
               WebkitAppRegion: 'no-drag',
             }} />
           <button type="submit" style={{
@@ -136,8 +136,8 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
             try { host = new URL(bm.url).hostname.replace('www.', ''); } catch (_) {}
             return (
               <button key={i} onClick={() => navigate(bm.url)} style={{
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 4, color: 'rgba(255,255,255,0.6)', fontSize: 10, padding: '3px 8px',
+                background: 'var(--surface)', border: '1px solid var(--surface-border)',
+                borderRadius: 4, color: 'var(--text-muted)', fontSize: 10, padding: '3px 8px',
                 cursor: 'pointer', whiteSpace: 'nowrap', WebkitAppRegion: 'no-drag',
               }}>{host}</button>
             );
@@ -164,7 +164,7 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
           partition="persist:browser"
           allowpopups="false"
           style={{
-            flex: 1, borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
+            flex: 1, borderRadius: 8, border: '1px solid var(--surface-border)',
             minHeight: 0, background: '#ffffff',
           }}
         />
@@ -174,18 +174,18 @@ export default function BrowserPanel({ isOpen, onClose, anchorRect }) {
           justifyContent: 'center', gap: 8,
         }}>
           <div style={{ fontSize: 32 }}>🌐</div>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>
             Enter a URL above to browse, or search the web.
           </p>
           {history.length > 0 && (
             <div style={{ width: '100%', marginTop: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 0' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 0' }}>
                 Recent
               </div>
               {history.slice(0, 5).map((h, i) => (
                 <button key={i} onClick={() => navigate(h.url)} style={{
                   display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none',
-                  cursor: 'pointer', padding: '6px 0', color: 'rgba(255,255,255,0.5)', fontSize: 11,
+                  cursor: 'pointer', padding: '6px 0', color: 'var(--text-dim)', fontSize: 11,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', WebkitAppRegion: 'no-drag',
                 }}>{h.title || h.url}</button>
               ))}
