@@ -157,8 +157,8 @@ function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
                 padding: '8px 10px', borderRadius: 8,
                 background: copied
                     ? 'rgba(var(--accent-secondary-rgb),0.1)'
-                    : hovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${copied ? 'rgba(var(--accent-secondary-rgb),0.3)' : 'rgba(255,255,255,0.06)'}`,
+                    : hovered ? 'var(--surface-hover)' : 'var(--surface)',
+                border: `1px solid ${copied ? 'rgba(var(--accent-secondary-rgb),0.3)' : 'var(--surface-border)'}`,
                 transition: 'background 0.15s, border 0.15s',
                 WebkitAppRegion: 'no-drag',
                 cursor: 'pointer',
@@ -183,10 +183,10 @@ function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
                     title="Copy again"
                     style={{
                         ...btnBase,
-                        color: copied ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.4)',
+                        color: copied ? 'var(--accent-secondary)' : 'var(--text-muted)',
                     }}
                     onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-secondary)'}
-                    onMouseLeave={e => e.currentTarget.style.color = copied ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.4)'}
+                    onMouseLeave={e => e.currentTarget.style.color = copied ? 'var(--accent-secondary)' : 'var(--text-muted)'}
                 >
                     <CopyIcon />
                 </button>
@@ -197,7 +197,7 @@ function ItemRow({ item, onCopy, onDelete, onPreviewImage }) {
                     title="Delete"
                     style={{ ...btnBase, color: 'var(--text-faint)', fontSize: 13 }}
                     onMouseEnter={e => { e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.background = 'rgba(255,107,107,0.1)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.25)'; e.currentTarget.style.background = 'none'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'none'; }}
                 >✕</button>
             </div>
 
@@ -343,7 +343,7 @@ export default function ClipboardPanel({ isOpen, onClose, anchorRect }) {
                         appearance: 'auto',
                     }}
                 >
-                    {FILTERS.map(f => <option key={f.value} value={f.value} style={{ background: '#1e2330' }}>{f.label}</option>)}
+                    {FILTERS.map(f => <option key={f.value} value={f.value} style={{ background: 'var(--panel-bg)', color: 'var(--text)' }}>{f.label}</option>)}
                 </select>
 
                 {/* Clear all */}

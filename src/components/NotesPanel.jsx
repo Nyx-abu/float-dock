@@ -63,7 +63,7 @@ function NoteCard({ note, onClick, onPin, onDelete }) {
     <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
         padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
-        background: hovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+        background: hovered ? 'var(--surface-hover)' : 'var(--surface)',
         border: '1px solid var(--surface-border)', transition: 'background 0.15s', WebkitAppRegion: 'no-drag',
       }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

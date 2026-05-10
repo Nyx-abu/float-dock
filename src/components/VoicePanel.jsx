@@ -219,7 +219,7 @@ export default function VoicePanel({ isOpen, onClose, anchorRect }) {
         <button onClick={handleClear} disabled={!transcript} style={{
           padding: '8px 16px', borderRadius: 8,
           background: 'var(--surface)', border: '1px solid var(--surface-border)',
-          color: transcript ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)',
+          color: transcript ? 'var(--text-dim)' : 'var(--text-faint)',
           fontSize: 12, fontWeight: 600,
           cursor: transcript ? 'pointer' : 'default',
           WebkitAppRegion: 'no-drag',
