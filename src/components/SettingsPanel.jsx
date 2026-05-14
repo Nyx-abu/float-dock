@@ -199,6 +199,60 @@ function Section({ title, icon, children }) {
 
 // ─── Accent Color Picker ──────────────────────────────────────────────────────
 
+function ApiKeyField({ label, configured, value, onChange, onClear, placeholder }) {
+  return (
+    <div style={{ padding: '10px 0', WebkitAppRegion: 'no-drag' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <span style={{ flex: 1, fontSize: 12.5, fontWeight: 500, color: 'var(--text)' }}>{label}</span>
+        <span style={{
+          fontSize: 10.5,
+          color: configured ? '#06d6a0' : 'var(--text-faint)',
+          fontWeight: 700,
+        }}>{configured ? 'Configured' : 'Not set'}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          type="password"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={configured ? 'Enter a new key to replace current key' : placeholder}
+          autoComplete="off"
+          spellCheck={false}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            background: 'var(--surface)',
+            border: '1px solid var(--surface-border)',
+            borderRadius: 8,
+            color: 'var(--text)',
+            fontSize: 11.5,
+            padding: '8px 10px',
+            outline: 'none',
+            fontFamily: 'inherit',
+            WebkitAppRegion: 'no-drag',
+          }}
+        />
+        <button
+          onClick={onClear}
+          disabled={!configured}
+          style={{
+            padding: '0 10px',
+            borderRadius: 8,
+            background: 'var(--surface)',
+            border: '1px solid var(--surface-border)',
+            color: configured ? 'var(--text-muted)' : 'var(--text-faint)',
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: configured ? 'pointer' : 'default',
+            fontFamily: 'inherit',
+            WebkitAppRegion: 'no-drag',
+          }}
+        >Clear</button>
+      </div>
+    </div>
+  );
+}
+
 function AccentColorPicker({ value, onChange }) {
   const [custom, setCustom] = useState(false);
   return (
@@ -288,7 +342,9 @@ function ThemeSwitcher({ value, onChange, accentColor }) {
 
 export default function SettingsPanel({ isOpen, onClose, anchorRect }) {
   const [settings, setSettings] = useState({ ...DEFAULTS });
+  const [keyDrafts, setKeyDrafts] = useState({ ai: '', whisper: '' });
   const [saved, setSaved] = useState(false);
+  const [keyError, setKeyError] = useState('');
   const panelRef = useRef(null);
   const api = useMemo(() => window.electronAPI, []);
 
@@ -336,12 +392,44 @@ export default function SettingsPanel({ isOpen, onClose, anchorRect }) {
   }, [api, applyVisuals]);
 
   const resetDefaults = useCallback(() => {
-    setSettings({ ...DEFAULTS });
+    setSettings(prev => ({ ...DEFAULTS, apiKeys: prev.apiKeys }));
     applyVisuals({ ...DEFAULTS });
     api?.invoke?.('settings:set', { settings: { ...DEFAULTS } })?.catch(() => {});
     setSaved(true);
     setTimeout(() => setSaved(false), 1200);
   }, [api, applyVisuals]);
+
+  const saveApiKeys = useCallback(async () => {
+    const keys = {};
+    if (keyDrafts.ai.trim()) keys.ai = keyDrafts.ai;
+    if (keyDrafts.whisper.trim()) keys.whisper = keyDrafts.whisper;
+    if (!Object.keys(keys).length) return;
+
+    setKeyError('');
+    try {
+      const result = await api?.invoke?.('settings:setApiKeys', { keys });
+      if (result?.apiKeys) {
+        setSettings(prev => ({ ...prev, apiKeys: result.apiKeys }));
+      }
+      setKeyDrafts({ ai: '', whisper: '' });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1200);
+    } catch (err) {
+      setKeyError(err.message || 'Unable to save API keys');
+    }
+  }, [api, keyDrafts]);
+
+  const clearApiKey = useCallback(async (name) => {
+    setKeyError('');
+    try {
+      const result = await api?.invoke?.('settings:clearApiKey', { name });
+      if (result?.apiKeys) {
+        setSettings(prev => ({ ...prev, apiKeys: result.apiKeys }));
+      }
+    } catch (err) {
+      setKeyError(err.message || 'Unable to clear API key');
+    }
+  }, [api]);
 
   if (!isOpen || !anchorRect) return null;
 
@@ -366,7 +454,7 @@ export default function SettingsPanel({ isOpen, onClose, anchorRect }) {
       isOpen={isOpen}
       dockAction="settings"
       defaultWidth={380}
-      defaultHeight={560}
+      defaultHeight={640}
       minWidth={320}
       minHeight={400}
     >
@@ -418,6 +506,49 @@ export default function SettingsPanel({ isOpen, onClose, anchorRect }) {
         <Section title="System" icon="💻">
           <Toggle label="Launch on Startup" description="Start Float Dock when Windows boots"
             value={settings.launchOnStartup} onChange={v => update('launchOnStartup', v)} accentColor={accent} />
+        </Section>
+
+        <Section title="API Keys" icon="Key">
+          <ApiKeyField
+            label="AI API Key"
+            configured={settings.apiKeys?.aiConfigured}
+            value={keyDrafts.ai}
+            onChange={v => setKeyDrafts(prev => ({ ...prev, ai: v }))}
+            onClear={() => clearApiKey('ai')}
+            placeholder="Paste assistant API key"
+          />
+          <ApiKeyField
+            label="Whisper API Key"
+            configured={settings.apiKeys?.whisperConfigured}
+            value={keyDrafts.whisper}
+            onChange={v => setKeyDrafts(prev => ({ ...prev, whisper: v }))}
+            onClear={() => clearApiKey('whisper')}
+            placeholder="Paste OpenAI API key for Whisper"
+          />
+          {keyError && (
+            <div style={{ color: '#ff8787', fontSize: 11, padding: '0 0 8px', lineHeight: 1.4 }}>
+              {keyError}
+            </div>
+          )}
+          <button
+            onClick={saveApiKeys}
+            disabled={!keyDrafts.ai.trim() && !keyDrafts.whisper.trim()}
+            style={{
+              width: '100%',
+              padding: '9px 0',
+              margin: '4px 0 10px',
+              borderRadius: 9,
+              background: keyDrafts.ai.trim() || keyDrafts.whisper.trim() ? `${accent}22` : 'var(--surface)',
+              border: `1px solid ${keyDrafts.ai.trim() || keyDrafts.whisper.trim() ? `${accent}44` : 'var(--surface-border)'}`,
+              color: keyDrafts.ai.trim() || keyDrafts.whisper.trim() ? accent : 'var(--text-faint)',
+              fontSize: 11.5,
+              fontWeight: 700,
+              cursor: keyDrafts.ai.trim() || keyDrafts.whisper.trim() ? 'pointer' : 'default',
+              transition: 'all 0.2s',
+              fontFamily: 'inherit',
+              WebkitAppRegion: 'no-drag',
+            }}
+          >Apply API Keys</button>
         </Section>
 
         <Section title="Clipboard" icon="📋">

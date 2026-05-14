@@ -50,6 +50,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       // Settings
       'settings:get',
       'settings:set',
+      'settings:setApiKeys',
+      'settings:clearApiKey',
       // Launcher
       'launcher:search',
       'launcher:open',

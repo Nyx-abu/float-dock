@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, screen, ipcMain, clipboard, nativeImage, shell, desktopCapturer } from 'electron';
+import { app, BrowserWindow, globalShortcut, screen, ipcMain, clipboard, nativeImage, shell, desktopCapturer, safeStorage, session } from 'electron';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
@@ -21,20 +21,6 @@ import { TerminalManager } from './src/workspace/TerminalManager.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ─── Load .env ────────────────────────────────────────────────────────────────
-function loadEnv() {
-  try {
-    const envPath = path.join(__dirname, '.env');
-    if (fs.existsSync(envPath)) {
-      const lines = fs.readFileSync(envPath, 'utf8').split('\n');
-      for (const line of lines) {
-        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)\s*$/);
-        if (match && !process.env[match[1]]) process.env[match[1]] = match[2];
-      }
-    }
-  } catch (_) {}
-}
-loadEnv();
-
 // ─── Settings Defaults ────────────────────────────────────────────────────────
 const SETTINGS_DEFAULTS = {
   dockPosition: 'bottom-center',
@@ -48,10 +34,130 @@ const SETTINGS_DEFAULTS = {
   theme: 'dark',
 };
 
+const API_KEY_NAMES = new Set(['ai', 'whisper']);
+const API_KEY_MAX_LENGTH = 4096;
+
+const apiKeysFile = () => path.join(app.getPath('userData'), 'api-keys.json');
+const fallbackKeyFile = () => path.join(app.getPath('userData'), 'api-keys.master');
+
+function readJsonFile(filePath, fallback = {}) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJsonFile(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2), { encoding: 'utf8', mode: 0o600 });
+}
+
+function getFallbackMasterKey() {
+  fs.mkdirSync(path.dirname(fallbackKeyFile()), { recursive: true });
+  if (fs.existsSync(fallbackKeyFile())) {
+    return fs.readFileSync(fallbackKeyFile());
+  }
+  const key = crypto.randomBytes(32);
+  fs.writeFileSync(fallbackKeyFile(), key, { mode: 0o600 });
+  return key;
+}
+
+function encryptSecret(value) {
+  if (safeStorage.isEncryptionAvailable()) {
+    return {
+      scheme: 'electron-safe-storage',
+      value: safeStorage.encryptString(value).toString('base64'),
+    };
+  }
+
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', getFallbackMasterKey(), iv);
+  const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
+  return {
+    scheme: 'local-aes-256-gcm',
+    iv: iv.toString('base64'),
+    tag: cipher.getAuthTag().toString('base64'),
+    value: encrypted.toString('base64'),
+  };
+}
+
+function decryptSecret(record) {
+  if (!record?.value) return '';
+  if (record.scheme === 'electron-safe-storage') {
+    return safeStorage.decryptString(Buffer.from(record.value, 'base64'));
+  }
+  if (record.scheme === 'local-aes-256-gcm') {
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm',
+      getFallbackMasterKey(),
+      Buffer.from(record.iv, 'base64')
+    );
+    decipher.setAuthTag(Buffer.from(record.tag, 'base64'));
+    return Buffer.concat([
+      decipher.update(Buffer.from(record.value, 'base64')),
+      decipher.final(),
+    ]).toString('utf8');
+  }
+  return '';
+}
+
+function readApiKeyRecords() {
+  return readJsonFile(apiKeysFile(), {});
+}
+
+function getApiKeyStatus() {
+  const records = readApiKeyRecords();
+  return {
+    aiConfigured: Boolean(records.ai?.value),
+    whisperConfigured: Boolean(records.whisper?.value),
+    storage: safeStorage.isEncryptionAvailable() ? 'safeStorage' : 'local-aes-256-gcm',
+  };
+}
+
+function getStoredApiKey(name) {
+  if (!API_KEY_NAMES.has(name)) throw new Error('Unknown API key name');
+  const records = readApiKeyRecords();
+  return decryptSecret(records[name]);
+}
+
+function setStoredApiKeys(keys) {
+  const records = readApiKeyRecords();
+  for (const [name, value] of Object.entries(keys || {})) {
+    if (!API_KEY_NAMES.has(name)) continue;
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    if (trimmed.length > API_KEY_MAX_LENGTH) throw new Error(`${name} API key is too long`);
+    records[name] = encryptSecret(trimmed);
+  }
+  writeJsonFile(apiKeysFile(), records);
+  return getApiKeyStatus();
+}
+
+function clearStoredApiKey(name) {
+  if (!API_KEY_NAMES.has(name)) throw new Error('Unknown API key name');
+  const records = readApiKeyRecords();
+  delete records[name];
+  writeJsonFile(apiKeysFile(), records);
+  return getApiKeyStatus();
+}
+
+function sanitizeSettings(settings) {
+  const cleaned = {};
+  for (const key of Object.keys(SETTINGS_DEFAULTS)) {
+    if (Object.prototype.hasOwnProperty.call(settings || {}, key)) {
+      cleaned[key] = settings[key];
+    }
+  }
+  return cleaned;
+}
+
 // ─── Clipboard History Manager ────────────────────────────────────────────────
 
 const HEX_COLOR_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
 const URL_RE = /^(https?:\/\/|ftp:\/\/|www\.)\S+/i;
+const WEBVIEW_URL_RE = /^https?:\/\//i;
 
 /**
  * Build a Windows CF_HDROP clipboard buffer.
@@ -434,6 +540,26 @@ function createWindow() {
       console.warn(`[Renderer] ${message} (${sourceId}:${line})`);
     }
   });
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (WEBVIEW_URL_RE.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  mainWindow.webContents.on('will-attach-webview', (event, webPreferences, params) => {
+    if (!WEBVIEW_URL_RE.test(params.src || '')) {
+      event.preventDefault();
+      return;
+    }
+    delete webPreferences.preload;
+    delete webPreferences.preloadURL;
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
+    webPreferences.sandbox = true;
+    webPreferences.allowRunningInsecureContent = false;
+    webPreferences.webSecurity = true;
+  });
+  session.fromPartition('persist:browser').setPermissionRequestHandler((_webContents, _permission, callback) => {
+    callback(false);
+  });
 
   // Show window once content has loaded
   mainWindow.webContents.on('did-finish-load', () => {
@@ -676,14 +802,11 @@ ipcMain.handle('notes:togglePin', (_e, { id }) => {
 });
 
 // ─── AI Chat IPC (Google GenAI) ───────────────────────────────────────────────
-let genaiInstance = null;
 async function getGenAI() {
-  if (genaiInstance) return genaiInstance;
   const { GoogleGenAI } = await import('@google/genai');
-  const apiKey = process.env.VITE_GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'your_api_key_here') throw new Error('API key not configured in .env');
-  genaiInstance = new GoogleGenAI({ apiKey });
-  return genaiInstance;
+  const apiKey = getStoredApiKey('ai');
+  if (!apiKey) throw new Error('AI API key not configured. Add it in Settings.');
+  return new GoogleGenAI({ apiKey });
 }
 
 ipcMain.handle('ai:chat', async (_e, { prompt }) => {
@@ -697,21 +820,34 @@ ipcMain.handle('ai:chat', async (_e, { prompt }) => {
 
 ipcMain.handle('ai:transcribe', async (_e, { audio, language }) => {
   try {
-    const ai = await getGenAI();
+    const apiKey = getStoredApiKey('whisper');
+    if (!apiKey) throw new Error('Whisper API key not configured. Add it in Settings.');
+    if (typeof audio !== 'string' || audio.length > 25_000_000) {
+      throw new Error('Invalid audio payload');
+    }
     const audioBuffer = Buffer.from(audio, 'base64');
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { inlineData: { mimeType: 'audio/webm', data: audio } },
-            { text: `Transcribe this audio to text. The language is ${language || 'en'}. Return ONLY the transcribed text, nothing else.` },
-          ],
-        },
-      ],
+    const form = new FormData();
+    form.append('file', new Blob([audioBuffer], { type: 'audio/webm' }), 'recording.webm');
+    form.append('model', 'whisper-1');
+    if (typeof language === 'string' && /^[a-z]{2}$/i.test(language)) {
+      form.append('language', language.toLowerCase());
+    }
+
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
     });
-    return { text: response.text || '' };
+    if (!response.ok) {
+      let message = `Whisper request failed (${response.status})`;
+      try {
+        const errorBody = await response.json();
+        if (errorBody?.error?.message) message = errorBody.error.message;
+      } catch (_) {}
+      throw new Error(message);
+    }
+    const result = await response.json();
+    return { text: result.text || '' };
   } catch (err) {
     console.error('[AI:Transcribe] Error:', err.message);
     throw new Error('Transcription failed: ' + (err.message || 'Unknown error'));
@@ -825,10 +961,36 @@ function readSettings() {
   try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch { return {}; }
 }
 
-ipcMain.handle('settings:get', () => ({ ...SETTINGS_DEFAULTS, ...readSettings() }));
+ipcMain.handle('settings:get', () => ({
+  ...SETTINGS_DEFAULTS,
+  ...sanitizeSettings(readSettings()),
+  apiKeys: getApiKeyStatus(),
+}));
+ipcMain.handle('settings:setApiKeys', (_e, { keys }) => {
+  const status = setStoredApiKeys(keys);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('settings:changed', {
+      ...SETTINGS_DEFAULTS,
+      ...sanitizeSettings(readSettings()),
+      apiKeys: status,
+    });
+  }
+  return { ok: true, apiKeys: status };
+});
+ipcMain.handle('settings:clearApiKey', (_e, { name }) => {
+  const status = clearStoredApiKey(name);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('settings:changed', {
+      ...SETTINGS_DEFAULTS,
+      ...sanitizeSettings(readSettings()),
+      apiKeys: status,
+    });
+  }
+  return { ok: true, apiKeys: status };
+});
 ipcMain.handle('settings:set', (_e, { settings }) => {
-  const prev = readSettings();
-  const merged = { ...SETTINGS_DEFAULTS, ...settings };
+  const prev = sanitizeSettings(readSettings());
+  const merged = { ...SETTINGS_DEFAULTS, ...sanitizeSettings(settings) };
   fs.writeFileSync(settingsFile(), JSON.stringify(merged, null, 2), 'utf8');
 
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -983,7 +1145,7 @@ ipcMain.handle('terminal:spawn', (e) => {
   const shellArgs = os.platform() === 'win32' ? ['-NoLogo'] : [];
   // Filter out sensitive environment variables before passing to PTY
   const safeEnv = { ...process.env };
-  const sensitiveKeys = ['VITE_GEMINI_API_KEY', 'GEMINI_API_KEY', 'API_KEY', 'SECRET', 'TOKEN', 'PASSWORD'];
+  const sensitiveKeys = ['AI_API_KEY', 'WHISPER_API_KEY', 'API_KEY', 'SECRET', 'TOKEN', 'PASSWORD'];
   for (const key of Object.keys(safeEnv)) {
     if (sensitiveKeys.some(sk => key.toUpperCase().includes(sk))) {
       delete safeEnv[key];
