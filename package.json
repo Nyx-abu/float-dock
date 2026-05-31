@@ -27,7 +27,6 @@
     "type": "git",
     "url": "https://github.com/Nyx-abu/float-dock.git"
   },
-  "homepage": "https://github.com/Nyx-abu/float-dock#readme",
   "license": "MIT",
   "dependencies": {
     "@google/genai": "^1.43.0",
