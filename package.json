@@ -9,7 +9,7 @@
     "dev:electron": "electron .",
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "build": "vite build",
-    "dist": "npm run build && electron-builder --win nsis --x64",
+    "dist": "npm run build && electron-builder --win zip --x64",
     "dist:clean": "npm run clean:data && npm run dist",
     "clean:data": "powershell -Command \"Remove-Item -Path $env:APPDATA/'Float Dock' -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item -Path $env:APPDATA/Electron -Recurse -Force -ErrorAction SilentlyContinue; Write-Host 'User data cleared'\"",
     "preview": "vite preview",
@@ -49,6 +49,7 @@
   "build": {
     "appId": "com.floatdock.app",
     "productName": "Float Dock",
+    "compression": "store",
     "asar": true,
     "asarUnpack": [
       "node_modules/node-pty/**/*"
@@ -72,7 +73,7 @@
       "signAndEditExecutable": false,
       "target": [
         {
-          "target": "nsis",
+          "target": "zip",
           "arch": [
             "x64"
           ]
