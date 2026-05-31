@@ -1,23 +1,24 @@
 <div align="center">
 
-```
-  _____ _             _     ____             _    
- |  ___| | ___   __ _| |_  |  _ \  ___   ___| | __
- | |_  | |/ _ \ / _` | __| | | | |/ _ \ / __| |/ /
- |  _| | | (_) | (_| | |_  | |_| | (_) | (__|   < 
- |_|   |_|\___/ \__,_|\__| |____/ \___/ \___|_|\_\
-```
+# 🌊 Float Dock
 
-### A sleek, floating productivity dock for Windows
+**Your digital arsenal, hovering at your fingertips.**
 
+[![Release](https://img.shields.io/github/v/release/Nyx-abu/float-dock?style=for-the-badge&color=2ea44f&label=Latest)](https://github.com/Nyx-abu/float-dock/releases)
 [![Electron](https://img.shields.io/badge/Electron-40.x-47848F?style=for-the-badge&logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows)
 
-**10 powerful tools in one elegant, always-on-top dock.**<br/>
-AI assistant · Clipboard history · Terminal · Browser · Screenshots · Voice-to-text · Notes · Launcher · Workspaces · Settings
+<br/>
+
+<img src="assets/hero_banner.png" alt="Float Dock Hero Banner" width="90%" style="border-radius: 12px; box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.5);" />
+
+<br/>
+<br/>
+
+**10 powerful tools in one elegant, always-on-top, macOS-style dock.**
+*AI Assistant · Clipboard History · Terminal · Browser · Screenshots · Voice-to-text · Notes · Launcher · Workspaces · Settings*
 
 [Getting Started](#-getting-started) · [Features](#-features) · [Architecture](#-architecture) · [Contributing](#-contributing)
 
@@ -27,91 +28,91 @@ AI assistant · Clipboard history · Terminal · Browser · Screenshots · Voice
 
 <br/>
 
+## ✨ The Vision
+
+Float Dock reimagines how you interact with your desktop. Instead of digging through windows, menus, and shortcuts, **Float Dock** is a sleek, dark-mode bar that rests unobtrusively at the bottom of your screen. One click reveals a beautiful, glassmorphic panel overlay housing the specific tool you need.
+
+It’s fast. It’s fluid. It’s the ultimate productivity hack for Windows power users.
+
+<br/>
+
 <div align="center">
-<img src="assets/dock-bar.png" alt="Float Dock Bar" width="85%" />
-<p><em>The dock bar — minimal, elegant, always within reach</em></p>
+  <img src="assets/productivity_panels.png" alt="Productivity Panels" width="80%" style="border-radius: 12px; box-shadow: 0px 8px 24px rgba(0,0,0,0.6);" />
+  <p><em>Seamless, draggable overlays that enhance—not interrupt—your workflow.</em></p>
 </div>
 
 <br/>
 
-## ✨ What is Float Dock?
-
-Float Dock is a **macOS-inspired floating dock** for Windows that puts 10 essential productivity tools at your fingertips. It hovers above all windows as a sleek, dark bar — click any icon to launch a draggable, resizable panel.
-
-Built with **Electron + React + Vite**, it features a premium dark UI with smooth animations, and runs as a lightweight overlay that stays out of your way until you need it.
-
-<br/>
-
-## 🎨 Features
+## 🎨 The Arsenal
 
 <table>
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
 ### ✨ AI Assistant
-Chat with **Gemini 2.5 Flash** directly from your dock. Quick actions let you summarize, translate, fix code, or explain anything from your clipboard — fills your input so you can edit before sending.
+Chat with **Gemini 2.5 Flash** instantly. Summarize, translate, fix code, or explain snippets. Quick actions populate the sleek input area, allowing you to edit the prompt before sending.
 
 </td>
-<td width="50%">
+<td width="50%" valign="top">
 
 ### 📋 Clipboard History
-System-wide clipboard manager tracking **text, images, files, links, and hex colors**. Filter by type, click any item to copy. Click images for a **fullscreen preview**. Stores up to 200 entries with intelligent deduplication.
+A system-wide clipboard manager tracking **text, images, files, links, and colors**. Stores up to 200 entries with intelligent deduplication and a breathtaking fullscreen image preview.
 
 </td>
 </tr>
 <tr>
-<td>
+<td valign="top">
 
 ### 🖥️ Terminal
-A fully integrated **xterm.js** terminal powered by **node-pty**. Run PowerShell or CMD right from the dock — no need to switch windows.
+An integrated **xterm.js** terminal powered by **node-pty**. Run PowerShell or CMD directly from the dock. Beautiful Dracula-inspired syntax highlighting built in.
 
 </td>
-<td>
+<td valign="top">
 
 ### 🌐 Browser
-A built-in browser with URL bar, bookmarks, history, and navigation controls. Browse the web without leaving your workflow. Sandboxed for security.
+A sandboxed webview browser with bookmarks, history, and navigation controls. Look up documentation or test web apps without leaving your context.
 
 </td>
 </tr>
 <tr>
-<td>
+<td valign="top">
 
 ### 📸 Screenshots
-Capture **full screen** or **individual windows** instantly. Screenshots are saved, thumbnailed, and browsable from a gallery. Click to **preview fullscreen**, copy, open in explorer, or delete.
+Capture **fullscreen** or **individual windows**. Access a beautiful grid gallery of your snaps. Click to preview, copy to clipboard, or manage your visual assets instantly.
 
 </td>
-<td>
+<td valign="top">
 
 ### 🎤 Voice to Text
-Speech recognition powered by **Gemini AI**. Record audio, get transcription via the main process — your API key never touches the renderer.
+Powered by **Gemini AI**, this tool records your speech and processes it via the secure main process. Seamlessly dictate notes or commands with high accuracy.
 
 </td>
 </tr>
 <tr>
-<td>
+<td valign="top">
 
 ### 📝 Quick Notes
-A rich-text note editor with **WYSIWYG formatting** — headings, bold, italic, lists, code blocks, blockquotes, and checkboxes. Pin important notes to the top.
+A distraction-free, rich-text WYSIWYG editor. Format with headings, bold, italic, code blocks, and checkboxes. Pin important thoughts directly to your workspace.
 
 </td>
-<td>
+<td valign="top">
 
 ### ⚡ Quick Launcher
-Spotlight/PowerToys-style **app launcher**. Searches your Start Menu and system apps with fuzzy matching. Navigate with keyboard, press Enter to launch.
+A Spotlight-style **app launcher**. Rapidly scan your Start Menu and system apps with fuzzy matching. Keyboard-driven for maximum speed.
 
 </td>
 </tr>
 <tr>
-<td>
+<td valign="top">
 
 ### 📁 Workspace Snapshots
-Save and restore your **entire desktop workspace** — open applications, window positions, and dock state. Switch between project contexts in seconds.
+Save the state of your **entire desktop workspace**—open apps, positions, and dock state. Switch between project contexts in a heartbeat.
 
 </td>
-<td>
+<td valign="top">
 
 ### ⚙️ Settings
-Configure dock position, always-on-top behavior, launch-on-startup, clipboard limits, and view keyboard shortcuts. All preferences persist across sessions.
+Granular control over dock position, aesthetics, blur, scale, and keyboard shortcuts. Tailor the experience to perfectly match your workflow setup.
 
 </td>
 </tr>
@@ -120,10 +121,8 @@ Configure dock position, always-on-top behavior, launch-on-startup, clipboard li
 <br/>
 
 <div align="center">
-<img src="assets/ai-panel.png" alt="AI Panel" width="45%" />
-&nbsp;&nbsp;&nbsp;
-<img src="assets/settings-panel.png" alt="Settings Panel" width="45%" />
-<p><em>AI Assistant and Settings panels — draggable, resizable, clean dark UI</em></p>
+  <img src="assets/ai_panel.png" alt="AI Panel Interface" width="80%" style="border-radius: 12px; box-shadow: 0px 8px 24px rgba(0,0,0,0.6);" />
+  <p><em>The AI Assistant interface—modern tech aesthetic, smooth gradients, and glassmorphism.</em></p>
 </div>
 
 <br/>
@@ -134,7 +133,7 @@ Configure dock position, always-on-top behavior, launch-on-startup, clipboard li
 
 - **Node.js** 18+ and **npm**
 - **Windows 10/11** (primary platform)
-- A **Gemini API key** from [Google AI Studio](https://aistudio.google.com/apikey) (for AI & voice features)
+- A **Gemini API key** from [Google AI Studio](https://aistudio.google.com/apikey)
 
 ### Installation
 
@@ -156,108 +155,29 @@ cp .env.example .env
 ```bash
 # Start both Vite dev server and Electron
 npm run dev
-
-# Or run them separately:
-npm run dev:vite     # Start Vite (React HMR)
-npm run dev:electron # Start Electron
 ```
 
-### Building for Production
-
-```bash
-npm run build
-```
-
-### Keyboard Shortcut
+### Keyboard Shortcuts
 
 | Shortcut | Action |
-|---|---|
-| `Ctrl + Shift + D` | Toggle dock visibility |
+|:---|:---|
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | Toggle dock visibility |
 
 <br/>
 
-## 🏗️ Architecture
+## 🔒 Security Posture
 
-```
-float-dock/
-├── electron-main.js          # Main process — IPC handlers, window management
-├── preload.js                # Secure bridge between main & renderer
-├── src/
-│   ├── App.jsx               # Root component
-│   ├── main.jsx              # React entry point
-│   ├── components/
-│   │   ├── DockMenu.jsx      # The dock bar with all icons
-│   │   ├── ResizablePanel.jsx # Shared draggable + resizable panel wrapper
-│   │   ├── AiPanel.jsx       # AI chat interface
-│   │   ├── ClipboardPanel.jsx # Clipboard history
-│   │   ├── TerminalPanel.jsx  # Integrated terminal
-│   │   ├── BrowserPanel.jsx   # Built-in browser
-│   │   ├── ScreenshotPanel.jsx # Screenshot capture
-│   │   ├── VoicePanel.jsx     # Voice-to-text
-│   │   ├── NotesPanel.jsx     # Rich text notes
-│   │   ├── LauncherPanel.jsx  # App launcher
-│   │   ├── WorkspacePanel.jsx # Workspace snapshots
-│   │   └── SettingsPanel.jsx  # Settings
-│   ├── hooks/
-│   │   └── usePanelPosition.js # Dragging + positioning logic
-│   ├── workspace/
-│   │   ├── SnapshotManager.js  # Save/load workspace snapshots
-│   │   ├── WindowTracker.js    # Track open windows
-│   │   └── TerminalManager.js  # Terminal session management
-│   └── styles/
-│       ├── global.css
-│       ├── DockMenu.css
-│       ├── panels.css          # Panel animations & shared styles
-│       └── ...
-├── .env.example              # API key template
-└── package.json
-```
-
-### Tech Stack
-
-| Layer | Technology | Purpose |
-|---|---|---|
-| **Framework** | Electron 40 | Desktop app shell, system APIs |
-| **UI** | React 18 | Component-based UI |
-| **Build** | Vite 5 | Fast HMR & bundling |
-| **Terminal** | xterm.js + node-pty | Embedded terminal emulator |
-| **AI** | Google Gemini 2.5 Flash | AI chat, text processing & voice transcription |
-| **Panels** | re-resizable | Resizable panel containers |
-
-<br/>
-
-## 🔒 Security
-
-Float Dock takes security seriously, especially as a desktop application with system-level access:
-
-| Measure | Details |
-|---|---|
-| **Context Isolation** | Renderer runs in a sandboxed context with `contextIsolation: true` |
-| **IPC Allowlists** | Both `invoke()` and `send()` channels are allowlisted in the preload script |
-| **No Node Integration** | Renderer has no direct access to Node.js APIs |
-| **Env Filtering** | Sensitive environment variables (API keys, tokens) are stripped from PTY sessions |
-| **Input Validation** | Shell commands use argument arrays (no string interpolation) to prevent injection |
-| **Path Traversal Protection** | File operations validate paths are within expected directories |
-| **Webview Sandboxing** | Browser panel uses isolated partition and blocks dangerous URL schemes |
-| **API Key Safety** | `.env` is gitignored; all API calls go through the main process — keys never touch the renderer |
-
-<br/>
-
-## 🎮 Usage Tips
-
-- **Drag panels freely** — grab any panel header to move it anywhere on screen
-- **Resize from any edge** — all panels support 8-direction resizing
-- **Toggle with hotkey** — `Ctrl+Shift+D` hides/shows the dock instantly
-- **Clipboard auto-tracks** — just copy anything on your system and it appears in history
-- **Click images to preview** — clipboard images and screenshots open in a fullscreen overlay
-- **Quick AI actions** — click a suggestion to fill your prompt, edit it, then send
-- **Keyboard launcher** — type to search, arrow keys to navigate, Enter to launch
+Float Dock is designed with a defense-in-depth security model:
+- **Context Isolation:** The renderer runs in a highly restricted sandbox (`contextIsolation: true`).
+- **Strict IPC:** Explicitly allowlisted channels bridge the main and renderer processes.
+- **Node Integration Disabled:** The UI layer has zero access to Node.js APIs.
+- **API Key Safety:** The `.env` variables (like your Gemini API key) are sequestered in the main process and never touch the UI layer.
 
 <br/>
 
 ## 🤝 Contributing
 
-Contributions are welcome! Here's how to get started:
+We love contributions! Float Dock thrives on community input.
 
 1. **Fork** the repository
 2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
@@ -265,27 +185,12 @@ Contributions are welcome! Here's how to get started:
 4. **Push** to the branch (`git push origin feature/amazing-feature`)
 5. **Open** a Pull Request
 
-### Development Notes
-
-- The app uses ES Modules (`"type": "module"` in package.json)
-- Preload script uses CommonJS (required by Electron)
-- `node-pty` requires native compilation — run `npm install` with build tools available
-- Hot reload works for the React UI; Electron main process requires restart
-
-<br/>
-
-## 📄 License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
 <br/>
 
 ---
 
 <div align="center">
-
-**Built with ❤️ and way too much coffee**
-
-<sub>Float Dock — because Alt+Tab is so last decade.</sub>
-
+  <strong>Engineered with precision for power users.</strong><br/>
+  <em>Float Dock — because Alt+Tab is so last decade.</em><br/><br/>
+  <a href="LICENSE">MIT License</a>
 </div>
