@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🌊 Float Dock
+<img src="assets/logo.svg" alt="Float Dock" width="500" />
+
+<br/>
 
 **Your digital arsenal, hovering at your fingertips.**
 
@@ -12,7 +14,7 @@
 
 <br/>
 
-<img src="assets/hero_banner.png" alt="Float Dock Hero Banner" width="90%" style="border-radius: 12px; box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.5);" />
+<img src="assets/dock_bar_enhanced.png" alt="Float Dock Hero Banner" width="90%" style="border-radius: 12px; box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.5);" />
 
 <br/>
 <br/>
@@ -37,7 +39,9 @@ It’s fast. It’s fluid. It’s the ultimate productivity hack for Windows pow
 <br/>
 
 <div align="center">
-  <img src="assets/productivity_panels.png" alt="Productivity Panels" width="80%" style="border-radius: 12px; box-shadow: 0px 8px 24px rgba(0,0,0,0.6);" />
+  <img src="assets/ai_panel_enhanced.png" alt="AI Panel Interface" width="45%" style="border-radius: 12px; box-shadow: 0px 8px 24px rgba(0,0,0,0.6);" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="assets/settings_panel_enhanced.png" alt="Settings Panel Interface" width="45%" style="border-radius: 12px; box-shadow: 0px 8px 24px rgba(0,0,0,0.6);" />
   <p><em>Seamless, draggable overlays that enhance—not interrupt—your workflow.</em></p>
 </div>
 
@@ -120,10 +124,7 @@ Granular control over dock position, aesthetics, blur, scale, and keyboard short
 
 <br/>
 
-<div align="center">
-  <img src="assets/ai_panel.png" alt="AI Panel Interface" width="80%" style="border-radius: 12px; box-shadow: 0px 8px 24px rgba(0,0,0,0.6);" />
-  <p><em>The AI Assistant interface—modern tech aesthetic, smooth gradients, and glassmorphism.</em></p>
-</div>
+
 
 <br/>
 
